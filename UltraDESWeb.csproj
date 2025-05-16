@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="\AutoAVL\AutoAVL.csproj" />
+    <ProjectReference Include="AutoAVL\AutoAVL.csproj" />
   </ItemGroup>
 
 </Project>
