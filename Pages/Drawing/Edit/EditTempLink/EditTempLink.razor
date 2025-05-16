@@ -1,0 +1,131 @@
+@namespace UltraDESDraw.Components
+@inject SharedDataService SharedDataService
+
+@{
+    SetUp();
+    if (!auto)
+    {
+        <line x1="@lineStart.x" y1="@lineStart.y" x2="@lineEnd.x" y2="@lineEnd.y" stroke="black" stroke-width="2" />
+    }
+    else 
+    {
+        <path d="M @lineStart.x @lineStart.y A @arcRadius @arcRadius 0 1 0 @lineEnd.x @lineEnd.y" fill="none" style="outline: none;" stroke="black" tabindex="0" stroke-width="2" pointer-events="none" />
+    }
+    <polygon points="@arrowTip.x @arrowTip.y @rightWing.x @rightWing.y @leftWing.x @leftWing.y" tabindex="0" fill="black" style="outline: none;" stroke-width="1" />
+}
+
+@code{
+    private Vector2D? start {get; set; }
+    private Vector2D? end {get; set; }
+    private bool auto = true;
+    private Vector2D lineStart = new Vector2D();
+    private Vector2D lineEnd = new Vector2D();
+    private Vector2D arrowTip = new Vector2D();
+    private Vector2D rightWing = new Vector2D();
+    private Vector2D leftWing = new Vector2D();
+    private double arcRadius;
+    protected override void OnInitialized()
+    {
+        SharedDataService.OnChange += StateHasChanged;
+    }
+
+    protected void Dispose()
+    {
+        SharedDataService.OnChange -= StateHasChanged;
+    }
+    
+    private void SetUp()
+    {
+        double distance;
+        if(SharedDataService.StartNode != null)
+            start = SharedDataService.Graph.svgCanvas.ToSvgCoordinates(SharedDataService.StartNode.position);
+        else if(SharedDataService.TempLinkStart != null)
+            start = SharedDataService.TempLinkStart;
+        else
+            start = new Vector2D();
+        if(SharedDataService.EndNode != null)
+            end = SharedDataService.Graph.svgCanvas.ToSvgCoordinates(SharedDataService.EndNode.position);
+        else if(SharedDataService.TempLinkEnd != null)
+            end = SharedDataService.TempLinkEnd;
+        else
+            end = new Vector2D();
+        
+        double stateRadius = SharedDataService.Graph.drawingDir.nodeRadius;
+        double arrowLength = SharedDataService.Graph.drawingDir.arrowLength;
+        
+        Vector2D transitionDirection;
+        Vector2D perpendicularDirection;
+
+        distance = (end - start).Length();
+        transitionDirection = (end - start).Normalized();
+        perpendicularDirection = transitionDirection.Perpendicular();
+        
+        auto = false;
+        if (SharedDataService.IsCreatingInitialTransition())
+        {
+            lineStart = start;
+
+            if (SharedDataService.EndNode != null)
+            {
+                arrowTip = end - transitionDirection * stateRadius;
+                lineEnd = end - transitionDirection * (arrowLength + stateRadius);
+            } else
+            {
+                arrowTip = end;
+                lineEnd = end - transitionDirection * arrowLength;
+            } 
+            rightWing = arrowTip - transitionDirection * arrowLength + perpendicularDirection * arrowLength / 2;
+            leftWing = arrowTip - transitionDirection * arrowLength - perpendicularDirection * arrowLength / 2;
+        } else
+        {
+            if (distance > stateRadius + arrowLength)
+            {
+                lineStart = start + stateRadius * transitionDirection;
+
+                if (SharedDataService.EndNode != null)
+                {
+                    arrowTip = end - transitionDirection * stateRadius;
+                    lineEnd = end - transitionDirection * (arrowLength + stateRadius);
+                } else
+                {
+                    arrowTip = end;
+                    lineEnd = end - transitionDirection * arrowLength;
+                } 
+                rightWing = arrowTip - transitionDirection * arrowLength + perpendicularDirection * arrowLength / 2;
+                leftWing = arrowTip - transitionDirection * arrowLength - perpendicularDirection * arrowLength / 2;
+            } else
+            {
+                auto = true;
+                arcRadius = SharedDataService.Graph.drawingDir.AutoRadius();
+                double arcRatio = SharedDataService.Graph.drawingDir.autoLinkDistanceRatio;
+                Vector2D autoLinkCenter = start + transitionDirection.Normalized() * (arcRadius * arcRatio) + transitionDirection.Normalized() * stateRadius;
+                SharedDataService._directionAuxiliary = autoLinkCenter.FromSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+
+                double totalRadius = SharedDataService.Graph.drawingDir.TotalRadius();
+                double autoRadius = SharedDataService.Graph.drawingDir.AutoRadius();
+                double autoDist = autoRadius * SharedDataService.Graph.drawingDir.autoLinkDistanceRatio * arcRatio + stateRadius;
+
+                arrowLength = SharedDataService.Graph.drawingDir.arrowLength;
+
+                double nodeAngle = Vector2D.AngleBetween(stateRadius, autoDist, autoRadius);
+                double arrowAngle = Vector2D.AngleBetween(arrowLength, autoRadius, autoRadius);
+
+                Vector2D arrowT = autoLinkCenter - transitionDirection.Rotated(nodeAngle) * autoRadius;
+                Vector2D arrowB = autoLinkCenter - transitionDirection.Rotated(nodeAngle + arrowAngle) * autoRadius; 
+
+                Vector2D arrowDir = (arrowT - arrowB).Normalized();
+                Vector2D arrowPer = arrowDir.Perpendicular();
+                
+                lineStart = autoLinkCenter - transitionDirection.Rotated(-nodeAngle) * autoRadius; 
+                lineEnd = arrowB;
+
+                arrowTip = arrowT;
+
+                rightWing = arrowTip - arrowDir * arrowLength + arrowPer * arrowLength / 2;
+                leftWing = arrowTip - arrowDir * arrowLength - arrowPer * arrowLength / 2;
+            }
+        }
+        @* rightWing = arrowTip - transitionDirection * arrowLength + perpendicularDirection * arrowLength / 2;
+        leftWing = arrowTip - transitionDirection * arrowLength - perpendicularDirection * arrowLength / 2; *@
+    }
+}

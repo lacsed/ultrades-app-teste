@@ -1,0 +1,28 @@
+@namespace UltraDESDraw.Components
+@inject SharedDataService SharedDataService
+
+<div id="container">
+    <div class="cluster">
+        <div class="cluster-options">
+            <div id="run-button" @onclick="Simulate">
+                <img src="\Images\Icons\free-shuffle.svg" alt="play button" id="simulate-logo">
+            </div>
+            <div id="simulate-text">
+                Free
+            </div>
+        </div>
+        
+        <div class="cluster-label">
+            Reshuffle
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private void Simulate()
+    {
+        SharedDataService.Graph.Shuffle();
+        SharedDataService.NotifyDataChanged();
+    }
+}

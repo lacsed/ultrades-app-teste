@@ -1,0 +1,33 @@
+$background: #FFFFFF;
+$primary-text: #1A1A1A;
+$secondary-text: #666666;
+$accent: #005F73;
+$secondary-accent: #94D2BD;
+$divider: #E0E0E0;
+$error: #D90429;
+$success: #2D6A4F;
+
+#container{
+    width: 100%;
+    height: 100%;
+    
+    background-color: $divider;
+}
+
+.cluster{
+    width: 100px;
+    height: 100%;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cluster-options{
+    height: 100%;
+    width: 100px;
+    
+    border: 5px solid $accent;
+    border-radius: 10px;
+}
+

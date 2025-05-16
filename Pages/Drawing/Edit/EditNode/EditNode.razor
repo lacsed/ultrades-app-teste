@@ -1,0 +1,148 @@
+@namespace UltraDESDraw.Components
+@inject SharedDataService SharedDataService
+
+@{
+    positionSVG = Node.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+    strokeColor = SharedDataService.SelectedNode == Node ? "blue" : "black";
+    radius = SharedDataService.Graph.drawingDir.nodeRadius;
+    markedRadius = SharedDataService.Graph.drawingDir.markedRatio;
+}
+@(positionSVG = Node.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin()))
+<circle @ondblclick="HandleDBClick" @ondblclick:stopPropagation @onkeyup="HandleKeyUp" 
+        @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmouseenter="HandleMouseEnter" @onmouseleave="HandleMouseLeave"
+        cx="@positionSVG.x" cy="@positionSVG.y" r="@radius"
+        pointer-events="all" tabindex="0" style="outline: none;" 
+        fill="none" stroke="@strokeColor" stroke-width="2" />
+
+@if (Node.marked)
+{
+    <circle cx="@positionSVG.x" cy="@positionSVG.y" r="@(radius * markedRadius)"
+            style="user-select: none; pointer-events: none;" 
+            fill="none" stroke="@strokeColor" stroke-width="2" />
+}
+<text x="@positionSVG.x" y="@positionSVG.y" font-size="20" text-anchor="middle" dominant-baseline="central" style="user-select: none; pointer-events: none;" fill="@strokeColor">
+    @Node.name
+    @if (isFocused)
+    {
+        <tspan>|<animate attributeName="visibility" from="visible" to="hidden" dur="1s" repeatCount="indefinite" /></tspan>
+    }
+</text>
+
+@code {
+    [Parameter]
+    public Node? Node {get; set; }
+
+    private Vector2D? positionSVG;
+
+    private double radius;
+    private double markedRadius;
+
+    private bool isDragging = false;
+    private bool isFocused = false;
+
+    private string strokeColor = "black";
+    private bool isEditing = false;
+
+    protected override void OnInitialized()
+    {
+        SharedDataService.OnChange += StateHasChanged;
+    }
+
+    protected void Dispose()
+    {
+        SharedDataService.OnChange -= StateHasChanged;
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace" && Node.name.Length > 0)
+        {
+            if (Node.name.Length == 1)
+            {
+                Node.name = "";
+            } 
+            else if (Node.name.Length > 0)
+            {
+                Node.name = Node.name.Substring(0, Node.name.Length - 1);
+                if (Node.name[Node.name.Length - 1].Equals(' '))
+                    Node.name = Node.name.Substring(0, Node.name.Length - 1);
+            }
+
+            SharedDataService.NotifyDataChanged();
+        }
+        else if ((e.Key.Length == 1 && char.IsLetterOrDigit(e.Key[0])))
+        {
+            Node.name += e.Key;
+            SharedDataService.NotifyDataChanged();
+        }
+        else if (e.Key == "Delete")
+        {
+            SharedDataService.Graph.graphLinks.RemoveAll(link => link.start == Node || link.end == Node);
+            SharedDataService.Graph.graphNodes.Remove(Node);
+            SharedDataService.Graph.UpdateAutomaton();
+            SharedDataService.NotifyDataChanged();
+        }
+    }
+
+    public async Task HandleGainFocus()
+    {
+        isFocused = true;
+        strokeColor = "blue";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task HandleLoseFocus()
+    {
+
+        isFocused = false;
+        strokeColor = "black";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void HandleDBClick(MouseEventArgs e)
+    {
+        if (e.Button == 0)
+        {
+            Node.marked = !Node.marked;
+            SharedDataService.NotifyDataChanged();
+        }
+    }
+
+    private async void HandleMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == 0)
+        {
+            isDragging = true;
+            SharedDataService.SelectedNode = Node;
+            SharedDataService.NotifyDataChanged();
+        }
+    }
+
+    @* public async Task HandleMouseMove(MouseEventArgs e)
+    {
+        position += new Vector2D(e.MovementX, -e.MovementY);
+        await positionChanged.InvokeAsync(position);
+        await InvokeAsync(StateHasChanged);
+    } *@
+
+    private void HandleMouseUp(MouseEventArgs e)
+    {
+        @* if (e.Button == 0)
+        {
+            isDragging = false; 
+            SharedDataService.SelectedNode = null;
+            SharedDataService.NotifyDataChanged();
+        } *@
+        //isDragging = false;
+    }
+
+    private async Task HandleMouseLeave(MouseEventArgs e)
+    {
+        SharedDataService.NodeLeave(Node);
+    }
+
+    private async Task HandleMouseEnter(MouseEventArgs e)
+    {
+        SharedDataService.NodeEnter(Node);
+    }
+}

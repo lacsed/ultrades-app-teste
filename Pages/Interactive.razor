@@ -1,0 +1,281 @@
+﻿@using global::UltraDES
+@inject IJSRuntime JSRuntime;
+@using System.Text.RegularExpressions
+
+@if (!computing)
+{
+    <div style="text-align: center">
+        <div class="columns" style="width: 100%; overflow: auto;margin-top:10px">
+            <div class="column is-half is-narrow">
+                <div class="box">
+                    <div class="message-header">
+                        <span>Events Avaiable:</span>
+                    </div>
+                    <div class="buttons are-small"
+                         style="max-height: 200px;max-width: 100%;overflow: auto;text-align: left;margin-top: 20px;margin-bottom: 5px;display: flex;flex-wrap: nowrap;">
+                        @if (automaton.Events.Any())
+                        {
+                            @foreach (var s in automaton.Events.OrderBy(e => e.ToString()))
+                            {
+                                if (Transitions.TryGetValue(CurrentState, out var events) && events.ContainsKey(s.ToString()))
+                                {
+                                    <button class="button is-outlined is-active" @onclick="() => changeHighligth(s.ToString())">@s.ToString()</button>
+                                }
+                                else
+                                {
+                                    <button class="button is-outlined" title="Disabled button" disabled>@s.ToString()</button>
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-half is-narrow">
+                <div class="box">
+                    <div class="message-header">
+                        <span>Navigated Events:</span>
+                    </div>
+
+                    <div style="max-height: 200px; max-width: 100%; overflow: auto; white-space: nowrap; text-align: left;" class="message-body">
+                        <p>@String.Join(", ", ListEvent)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="width: 100%; overflow: auto; white-space: nowrap;">
+            <div class="box" style="display: flex; flex-direction: column;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <p style="margin: 0;"><strong>@automaton.Name</strong></p>
+                    <div class="buttons are-small" style="display: flex; align-items: center;">
+                        <button class="button is-info" @onclick="ZoomOut"><span><i class="fas fa-search-minus"></i></span></button>
+                        <button class="button is-info" @onclick="ZoomIn"><span><i class="fas fa-search-plus"></i></span></button>
+                    </div>
+                </div>
+                <div style="overflow: auto; margin-top: 10px;">
+                    @((MarkupString)svg)
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center">
+            <div class="buttons" style="display: flex; align-items: center; margin-top: 10px; justify-content: center;">
+                <button class="button is-warning" @onclick="back"><span><i class="fas fa-undo has-text-light"></i></span></button>
+                <button class="button is-danger" @onclick=@OnCancel>Close</button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="pageloader is-active" style="background: #287ef2"><span class="title">Drawing</span></div>
+}
+@code {
+
+    [Parameter]
+    public string DotCode { get; set; }
+
+    [Parameter]
+    public DeterministicFiniteAutomaton automaton { get; set; }
+
+    [Parameter]
+    public Action OnCancel { get; set; }
+
+    [Parameter]
+    public List<string> ListState { get; set; }
+
+    private bool computing = false;
+    private List<string> ListEvent = new List<string>();
+    private Dictionary<string, Dictionary<string, string>> Transitions = new();
+    private string svg = "";
+    private string CurrentState;
+    private double zoomFactorW;
+    private double zoomFactorH;
+    private double proportion;
+    private double currentWidth;
+    private double currentHeight;
+    private double initialHeight;
+    private double initialWidth;
+    private string widthPattern = @"width=""([\d\.]+)pt""";
+    private string heightPattern = @"height=""([\d\.]+)pt""";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        computing = true;
+        await Task.Delay(1);
+        if (ListState.Count == 0)
+        {
+            
+            ListEvent.Clear();
+            svg = await JSRuntime.InvokeAsync<string>("GraphViz", DotCode);
+            CurrentState = automaton.InitialState.ToString();
+            ExtractDimensions(svg);
+            proportion = initialHeight / initialWidth;
+            zoomFactorH = 0;
+            zoomFactorW = 0;
+            ListState.Add(CurrentState);
+            ModifyStateColor(CurrentState, "#287ef2");
+            Transitions = automaton.Transitions
+           .GroupBy(t => t.Origin.ToString())
+           .ToDictionary(
+               g => g.Key,
+               g => g.ToDictionary(t => t.Trigger.ToString(), t => t.Destination.ToString()));
+        }
+        computing = false;
+        await Task.Delay(1);
+    }
+
+    public void back()
+    {
+        if (ListState.Count > 1)
+        {
+            ModifyStateColor(ListState.Last(), "none");
+
+            ListState.RemoveAt(ListState.Count - 1);
+            ListEvent.RemoveAt(ListEvent.Count - 1);
+
+            ModifyStateColor(ListState.Last(), "#287ef2");
+
+            CurrentState = ListState.Last();
+        }
+    }
+
+    public void changeHighligth(string eventClick)
+    {
+        if (Transitions.TryGetValue(CurrentState, out var events) && events.TryGetValue(eventClick, out var destination))
+        {
+            ModifyStateColor(CurrentState, "none");
+
+            CurrentState = destination;
+            ListState.Add(CurrentState);
+            ListEvent.Add(eventClick);
+
+            ModifyStateColor(CurrentState, "#287ef2");
+        }
+    }
+
+    private void ModifyStateColor(string stateId, string newColor)
+    {
+        string titleTag = $"<title>{stateId}</title>";
+        int titleIndex = svg.IndexOf(titleTag);
+
+        if (titleIndex != -1)
+        {
+            // Encontre o início do elemento <g> que contém as elipses
+            int groupStart = svg.LastIndexOf("<g", titleIndex);
+            int groupEnd = svg.IndexOf("</g>", groupStart) + 4;
+
+            // Procurar por todas as elipses dentro do grupo
+            int ellipseStart = groupStart;
+            int ellipseCount = 0;
+            string internalEllipse = null;
+            string externalEllipse = null;
+            int ellipseEnd = 0;
+            string ellipseContent;
+
+            while ((ellipseStart = svg.IndexOf("<ellipse", ellipseStart, groupEnd - ellipseStart)) != -1)
+            {
+                ellipseEnd = svg.IndexOf("/>", ellipseStart) + 2;
+                ellipseContent = svg.Substring(ellipseStart, ellipseEnd - ellipseStart);
+
+                if (ellipseCount == 0)
+                {
+                    // Primeira elipse (interna)
+                    internalEllipse = ellipseContent;
+                }
+                else if (ellipseCount == 1)
+                {
+                    // Segunda elipse (externa)
+                    externalEllipse = ellipseContent;
+                }
+                ellipseCount++;
+                ellipseStart = ellipseEnd;
+            }
+
+            string newInternalEllipse;
+            string groupContent;
+            string newGroupContent;
+            if (internalEllipse != null && externalEllipse != null)
+            {
+                // Externa: substituir qualquer valor existente de fill pela nova cor
+                string newExternalEllipse = Regex.Replace(externalEllipse, "fill=\"[^\"]*\"", $"fill=\"{newColor}\"");
+
+                // Interna: substituir qualquer valor existente de fill pela nova cor
+                newInternalEllipse = Regex.Replace(internalEllipse, "fill=\"[^\"]*\"", $"fill=\"{newColor}\"");
+
+                // Substituir o conteúdo das elipses no SVG
+                groupContent = svg.Substring(groupStart, groupEnd - groupStart);
+                newGroupContent = groupContent.Replace(externalEllipse, newExternalEllipse)
+                                              .Replace(internalEllipse, newInternalEllipse);
+
+                // Certifique-se de que a elipse interna seja desenhada depois da externa
+                if (newGroupContent.IndexOf(newInternalEllipse) < newGroupContent.IndexOf(newExternalEllipse))
+                {
+                    newGroupContent = newGroupContent.Replace(newInternalEllipse, "")
+                                                      .Replace(newExternalEllipse, newExternalEllipse + newInternalEllipse);
+                }
+                svg = svg.Replace(groupContent, newGroupContent);
+            }
+            else if (internalEllipse != null && externalEllipse == null)
+            {
+                newInternalEllipse = Regex.Replace(internalEllipse, "fill=\"[^\"]*\"", $"fill=\"{newColor}\"");
+                groupContent = svg.Substring(groupStart, groupEnd - groupStart);
+                newGroupContent = groupContent.Replace(internalEllipse, newInternalEllipse);
+                svg = svg.Replace(groupContent, newGroupContent);
+            }
+        }
+    }
+
+    private void ZoomIn()
+    {
+        if ((currentWidth <= 2 * initialWidth) && (currentHeight <= 2 * initialHeight))
+        {
+            zoomFactorW = Math.Round(0.25 * initialWidth);
+            UpdateSvgSize();
+        }
+    }
+    private void ZoomOut()
+    {
+        if ((currentWidth - Math.Round(0.25 * initialWidth) >= 0.5 * initialWidth) && (currentHeight - Math.Round(proportion * 0.25 * initialWidth) >= 0.5 * initialHeight))
+        {
+            zoomFactorW = -Math.Round(0.25 * initialWidth);
+            UpdateSvgSize();
+        }
+    }
+    private void UpdateSvgSize()
+    {
+        zoomFactorH = proportion * zoomFactorW;
+        zoomFactorH = (int)Math.Round(zoomFactorH);
+        Match widthMatch = Regex.Match(svg, widthPattern);
+        Match heightMatch = Regex.Match(svg, heightPattern);
+        if (widthMatch.Success && heightMatch.Success)
+        {
+            string widthValue = widthMatch.Value.Split('"')[1].Replace("pt", "");
+            string heightValue = heightMatch.Value.Split('"')[1].Replace("pt", "");
+            if (double.TryParse(widthValue, out double originalWidth) && double.TryParse(heightValue, out double originalHeight))
+            {
+                double newWidth = originalWidth + zoomFactorW;
+                double newHeight = originalHeight + zoomFactorH;
+                currentWidth = newWidth;
+                currentHeight = newHeight;
+                svg = Regex.Replace(svg, widthPattern, $"width=\"{newWidth}pt\"");
+                svg = Regex.Replace(svg, heightPattern, $"height=\"{newHeight}pt\"");
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void ExtractDimensions(string svgContent)
+    {
+        Match widthMatch = Regex.Match(svgContent, widthPattern);
+        Match heightMatch = Regex.Match(svgContent, heightPattern);
+        if (widthMatch.Success && heightMatch.Success)
+        {
+            initialWidth = int.Parse(widthMatch.Groups[1].Value.Split('.')[0]);
+            initialHeight = int.Parse(heightMatch.Groups[1].Value.Split('.')[0]);
+            currentWidth = initialWidth;
+            currentHeight = initialHeight;
+        }
+    }
+}

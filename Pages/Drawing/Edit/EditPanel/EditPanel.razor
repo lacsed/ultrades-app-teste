@@ -1,0 +1,94 @@
+@namespace UltraDESDraw.Components
+@inject SharedDataService SharedDataService
+
+<div id="container">
+    <div id="states-list">
+        <div class="label no-select" @onclick="StatesClicked">
+            Estados
+            <img src="\Images\Icons\arrow @(StatesArrowDirection).svg" alt="@(StatesArrowDirection)ward arrow" class="icon">
+        </div>
+        <div>
+            @if(StatesArrowDirection == "up")
+            {
+                <ul class="no-select">
+                @{
+                    SortNodes();
+                }
+                @foreach(Node node in SharedDataService.Graph.graphNodes)
+                {
+                    <li class="node-entry">
+                        <div class="node-name" tabindex="0" @onkeyup="args => HandleNameChange(node, args)">
+                            @node.name
+                        </div>
+                        <div class="node-entry-buttons">
+                            <img src="\Images\Icons\checked circle.svg" alt="checked circle">
+                            <img src="\Images\Icons\trash.svg" alt="trash icon">
+                        </div>
+                    </li>
+                }
+                </ul>
+            }
+        </div>
+    </div>
+    <div id="transitions-list">
+        <div class="label" @onclick="TransitionsClicked">
+            Transições
+            <img src="\Images\Icons\arrow up.svg" alt="upward arrow" class="icon">
+        </div>
+    </div>
+</div>
+
+@code{
+    private string StatesArrowDirection { get; set; } = "down";
+    private string TransitionsArrowDirection { get; set; } = "down";
+
+    protected override void OnInitialized()
+    {
+        SharedDataService.OnChange += StateHasChanged;
+    }
+
+    protected void Dispose()
+    {
+        SharedDataService.OnChange -= StateHasChanged;
+    }
+
+    private void SortNodes()
+    {
+        SharedDataService.Graph.graphNodes.Sort((a, b) => string.Compare(a.name, b.name));
+    }
+
+    private void StatesClicked()
+    {
+        StatesArrowDirection = StatesArrowDirection == "down" ? "up" : "down";
+    }
+
+    private void TransitionsClicked()
+    {
+        TransitionsArrowDirection = TransitionsArrowDirection == "down" ? "up" : "down";
+    }
+
+    private void HandleNameChange(Node node, KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace" && node.name.Length > 0)
+        {
+            if (node.name.Length == 1)
+            {
+                node.name = "";
+            } 
+            else if (node.name.Length > 0)
+            {
+                node.name = node.name.Substring(0, node.name.Length - 1);
+                if (node.name[node.name.Length - 1].Equals(' '))
+                    node.name = node.name.Substring(0, node.name.Length - 1);
+            }
+
+            SharedDataService.NotifyDataChanged();
+        }
+        else if ((e.Key.Length == 1 && char.IsLetterOrDigit(e.Key[0])))
+        {
+            node.name += e.Key;
+            SharedDataService.NotifyDataChanged();
+        }
+    }
+} 
+

@@ -1,0 +1,390 @@
+@namespace UltraDESDraw.Components
+@inject SharedDataService SharedDataService
+
+<g tabindex="0" @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onkeyup="HandleKeyUp" @onmousemove="HandleMouseMove" @onfocusin="HandleGainFocus" @onfocusout="HandleLoseFocus">
+@{
+    @* if (SharedDataService.SelectedLink == Link)
+    {
+        isFocused = true;
+        linkColor = "blue";
+    }
+    else 
+    {
+        isFocused = false;
+        linkColor = "black";
+    } *@
+
+    if (_isCurved)
+    {
+        <path d="M @_positionArcStart.x @_positionArcStart.y A @_radiusArcLink @_radiusArcLink 0 @largeArcFlag @sweepFlag @_positionArcEnd.x @_positionArcEnd.y" fill="none" style="outline: none;" stroke="@linkColor" tabindex="0" stroke-width="2" pointer-events="none" />
+        <path d="M @_positionArcStart.x @_positionArcStart.y A @_radiusArcLink @_radiusArcLink 0 @largeArcFlag @sweepFlag @_positionArcEnd.x @_positionArcEnd.y" fill="none" style="outline: none;" stroke="transparent" tabindex="0" stroke-width="10" pointer-events="stroke"/>
+    }
+    else
+    {
+        <line x1="@_positionLineStart.x" y1="@_positionLineStart.y" x2="@_positionLineEnd.x" y2="@_positionLineEnd.y" stroke="@linkColor" stroke-width="2" pointer-events="none" />
+        <line x1="@_positionLineStart.x" y1="@_positionLineStart.y" x2="@_positionArrowTip.x" y2="@_positionArrowTip.y" @onclick:stopPropagation focusable="true" stroke="transparent" stroke-width="40" pointer-events="all" />
+
+    }
+    <polygon points="@_positionArrowTip.x @_positionArrowTip.y @_positionRightWing.x @_positionRightWing.y @_positionLeftWing.x @_positionLeftWing.y" tabindex="0" fill="@linkColor" style="outline: none;" stroke-width="1" />
+
+    @if ( isControllable)
+    {
+        <line x1="@_tickStart.x" y1="@_tickStart.y" x2="@_tickEnd.x" y2="@_tickEnd.y" stroke="@linkColor" stroke-width="2" />
+    }
+
+}
+
+<text x="@_positionText.x" y="@_positionText.y" font-size="20" text-anchor="middle" dominant-baseline="central" style="user-select: none;" fill="@linkColor">
+    @_linkName
+    
+</text>
+</g>
+
+
+@code {
+    [Parameter]
+    public Link? Link {get; set; }
+
+    private Vector2D _positionLineStart = new Vector2D();
+    private Vector2D _positionLineEnd = new Vector2D();
+
+    private Vector2D _positionArcStart = new Vector2D();
+    private Vector2D _positionArcEnd = new Vector2D();
+
+    private Vector2D _positionRightWing = new Vector2D();
+    private Vector2D _positionLeftWing = new Vector2D();
+    private Vector2D _positionArrowTip = new Vector2D();
+    
+    private Vector2D _positionText = new Vector2D();
+
+    private Vector2D _positionArcCenter = new Vector2D();
+
+    private Vector2D _tickStart;
+    private Vector2D _tickEnd;
+
+    public bool isControllable { get; set; } = false;
+
+    // Component variables
+    private string _linkName;
+    private bool _isCurved = false;
+    private bool _isAuto = false;
+    private bool _isInitial = false;
+    private bool isFocused = false;
+
+    // Drawing variables
+    private double centerRatio;
+    private double _radiusArcLink;
+    private double _radiusAutoLink;
+    private double _arrowLength;
+    private double _arrowWidth;
+    private double _nodeRadius;
+    
+    private double _distanceNodeAutoCenter;
+    private double _angleAutoLinkStart;
+    private double _angleAutoArrowCover;
+    private double _autoRatio;
+    private double _radiusNode;
+    private double autoLinkRadius;
+    private double textDistance;
+    private int largeArcFlag = 0;
+    private int sweepFlag = 0;
+    private bool _flagMouseIsDown = false;
+
+    private string linkColor = "black";
+
+    protected override void OnInitialized()
+    {
+        _linkName = Link.name;
+
+        _arrowWidth = SharedDataService.Graph.drawingDir.arrowWidth;
+        _radiusAutoLink = SharedDataService.Graph.drawingDir.AutoRadius();
+        _nodeRadius = SharedDataService.Graph.drawingDir.TotalRadius();
+        _autoRatio = SharedDataService.Graph.drawingDir.autoLinkDistanceRatio;
+        _distanceNodeAutoCenter = _autoRatio * _radiusAutoLink + _nodeRadius;
+        _arrowLength = SharedDataService.Graph.drawingDir.arrowLength;
+        _angleAutoLinkStart = Vector2D.AngleBetween(_nodeRadius, _distanceNodeAutoCenter, _radiusAutoLink);
+        _angleAutoArrowCover = Vector2D.AngleBetween(_arrowLength, _radiusAutoLink, _radiusAutoLink);
+
+        if (Link.isAutoLink)
+        {
+            _isAuto = true;
+            _isCurved = true;
+            largeArcFlag = 1;
+        }  
+        else if (Link.isInitialLink)
+            _isInitial = true;
+        else
+        {
+            _isAuto = false;
+            _isInitial = false;
+        }
+        
+        SharedDataService.OnChange += StateHasChanged;
+    }
+
+    protected void Dispose()
+    {
+        SharedDataService.OnChange -= StateHasChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isCurved = false;
+
+        Vector2D positionTic = new Vector2D();
+        Vector2D directionTicPerpendicular = new Vector2D();
+
+        if (_isAuto)
+        {
+            _isCurved = true;
+            _radiusArcLink = _radiusAutoLink;
+
+            Vector2D positionNode = Link.start.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+            Vector2D directionAutoLinkCenter = Link._directionAuxiliary.ToSvgDirection();
+            Vector2D positionAutoLinkCenter =  positionNode + directionAutoLinkCenter * _distanceNodeAutoCenter;
+
+            positionTic = positionAutoLinkCenter + directionAutoLinkCenter * _radiusAutoLink;
+            directionTicPerpendicular = directionAutoLinkCenter;
+
+            // Since the auto link has a bit of interposition with the node it is connected to, positioning the arrow must take this into account.
+            Vector2D positionArrowTip = positionAutoLinkCenter - directionAutoLinkCenter.Rotated(_angleAutoLinkStart) * _radiusAutoLink;
+            Vector2D positionArrowBase = positionAutoLinkCenter - directionAutoLinkCenter.Rotated(_angleAutoLinkStart + _angleAutoArrowCover) * _radiusAutoLink;
+
+            Vector2D directionArrow = (positionArrowTip - positionArrowBase).Normalized();
+            Vector2D directionArrowPerpendicular = directionArrow.Perpendicular();
+            
+            // The start of the arc is in the opposite of the arrow, so the angle is negative compared to the angle used previously.
+            _positionArcStart = positionAutoLinkCenter - directionAutoLinkCenter.Rotated(-_angleAutoLinkStart) * _radiusAutoLink; 
+            _positionArcEnd = positionArrowBase;
+
+            _positionArrowTip = positionArrowTip;
+            _positionRightWing = _positionArrowTip - directionArrow * _arrowLength + directionArrowPerpendicular * _arrowWidth / 2;
+            _positionLeftWing = _positionArrowTip - directionArrow * _arrowLength - directionArrowPerpendicular * _arrowWidth / 2;
+
+            _positionText = positionAutoLinkCenter + directionAutoLinkCenter * (_radiusAutoLink + 20);
+        }
+        else if (_isInitial)
+        {
+            // In the case of an initial link, _directionAuxiliary represents where the link starts.
+            Vector2D positionStartPoint = Link._directionAuxiliary.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+            Vector2D positionEndNode = Link.end.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+
+            Vector2D directionTransition = (positionEndNode - positionStartPoint).Normalized();
+            Vector2D directionPerpendicular = directionTransition.Perpendicular();
+
+            _positionArrowTip = positionEndNode - directionTransition * _nodeRadius;
+            _positionRightWing = _positionLineEnd + directionPerpendicular * _arrowWidth / 2;
+            _positionLeftWing = _positionLineEnd - directionPerpendicular * _arrowWidth / 2;
+
+            _positionLineEnd = _positionArrowTip - directionTransition * _arrowLength;
+            _positionLineStart = positionStartPoint;
+        }
+        else
+        {
+            Vector2D positionStartNode = Link.start.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+            Vector2D positionEndNode = Link.end.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+
+            Vector2D directionTransition = (positionEndNode - positionStartNode).Normalized();
+            Vector2D directionPerpendicular = directionTransition.PerpendicularSVG();
+
+            Vector2D positionTransitionMiddle = positionStartNode.Middle(positionEndNode);
+            Vector2D position_directionAuxiliary = Link._directionAuxiliary.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+
+            double percentageTransitionDistanceToRadius = Link.radiusPercentage;
+
+            if (percentageTransitionDistanceToRadius != 0)
+            {
+                _isCurved = true;
+
+                double distanceTransition = (positionEndNode - positionStartNode).Length();
+
+                Vector2D positionArcSide = positionTransitionMiddle + directionPerpendicular * percentageTransitionDistanceToRadius * distanceTransition / 2;
+                Vector2D positionArcCenter = Vector2D.FindCenter(positionStartNode, positionArcSide, positionEndNode);
+
+                positionTic = positionArcSide;
+                directionTicPerpendicular = directionPerpendicular;
+
+                _radiusArcLink = (positionStartNode - positionArcCenter).Length();
+
+                Vector2D directionMiddleToCenter = (positionArcCenter - positionTransitionMiddle).Normalized();
+                Vector2D directionMiddleToSide = (positionArcSide - positionTransitionMiddle).Normalized();
+
+                double angleBetweenDirections = Vector2D.SmallestAngleBetweenVectors(directionMiddleToCenter, directionMiddleToSide);
+
+                largeArcFlag = directionMiddleToCenter == directionMiddleToSide ? 1 : 0;
+                sweepFlag = percentageTransitionDistanceToRadius >= 0 ? 0 : 1;
+
+                double angleNodeOffset = Vector2D.AngleBetween(_nodeRadius, _radiusArcLink, _radiusArcLink);
+                double angleArrowOffset = Vector2D.AngleBetween(_arrowLength, _radiusArcLink, _radiusArcLink);
+
+                int directionRotation = sweepFlag == 1 ? 1 : -1;
+
+                Vector2D directionCenterToStartNode = (positionStartNode - positionArcCenter).Normalized();
+                Vector2D directionCenterToEndNode = (positionEndNode - positionArcCenter).Normalized();
+
+                _positionArcStart = positionArcCenter + directionCenterToStartNode.Rotated(angleNodeOffset * directionRotation) * _radiusArcLink;
+                _positionArcEnd = positionArcCenter + directionCenterToEndNode.Rotated((angleNodeOffset + angleArrowOffset) * -directionRotation) * _radiusArcLink;
+
+                _positionText = positionArcSide + directionPerpendicular * 20;
+
+                _positionArrowTip = positionArcCenter + directionCenterToEndNode.Rotated(angleNodeOffset * -directionRotation) * _radiusArcLink;
+
+                Vector2D positionArrowBase = _positionArcEnd;
+                Vector2D directionArrow = (_positionArrowTip - positionArrowBase).Normalized();
+                Vector2D directionArrowPerpendicular = directionArrow.Perpendicular();
+
+                _positionRightWing = positionArrowBase + directionArrowPerpendicular * _arrowWidth / 2;
+                _positionLeftWing = positionArrowBase - directionArrowPerpendicular * _arrowWidth / 2;
+            }
+            else
+            {
+                positionTic = positionTransitionMiddle;
+                directionTicPerpendicular = directionPerpendicular;
+
+                _positionLineStart = positionStartNode + directionTransition * _nodeRadius;
+                _positionLineEnd = positionEndNode - directionTransition * (_nodeRadius + _arrowLength);
+
+                _positionArrowTip = positionEndNode - directionTransition * _nodeRadius;
+                _positionRightWing = _positionLineEnd + directionPerpendicular * _arrowWidth / 2;
+                _positionLeftWing = _positionLineEnd - directionPerpendicular * _arrowWidth / 2;
+
+                _positionText = positionTransitionMiddle + directionPerpendicular * 20;
+            }
+        }
+
+        if (isControllable)
+        {
+            double tickLength = 10;
+
+            _tickStart = positionTic - directionTicPerpendicular * tickLength / 2;
+            _tickEnd = positionTic + directionTicPerpendicular * tickLength / 2;
+        }
+
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task HandleGainFocus()
+    {
+        isFocused = true;
+        linkColor = "blue";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task HandleLoseFocus()
+    {
+        isFocused = false;
+        linkColor = "black";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleMouseDown()
+    {
+        _flagMouseIsDown = true;
+        SharedDataService.SelectedLink = this;
+        SharedDataService.NotifyDataChanged();
+    }
+
+    private async Task HandleMouseUp()
+    {
+        _flagMouseIsDown = false;
+    }
+
+    public void HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (_isInitial) return;
+
+        if (e.Key == "Enter" && e.ShiftKey)
+        {
+            isControllable = !isControllable;
+            SharedDataService.UpdateAutomaton(); // Se necessário persistir
+            SharedDataService.NotifyDataChanged(); // Redesenha
+            return;
+        }
+
+        if (e.Key == "Backspace" && _linkName.Length > 0)
+        {
+            if (_linkName.Length == 1)
+            {
+                _linkName = "";
+            }
+            else
+            {
+                _linkName = _linkName.Substring(0, _linkName.Length - 1);
+                if (_linkName.EndsWith(" "))
+                    _linkName = _linkName.Substring(0, _linkName.Length - 1);
+            }
+        }
+        else if (e.Key.Length == 1 && 
+                (char.IsLetterOrDigit(e.Key[0]) || 
+                e.Key == "," || 
+                e.Key == ";" || 
+                e.Key == "."))
+        {
+            _linkName += e.Key;
+        }
+        else if (e.Key == "Delete")
+        {
+            SharedDataService.Graph.graphLinks.Remove(Link);
+            SharedDataService.Graph.UpdateAutomaton();
+            SharedDataService.NotifyDataChanged();
+        }
+
+        Link.name = _linkName;
+        SharedDataService.UpdateAutomaton();
+        SharedDataService.NotifyDataChanged();
+    }
+
+
+    public async Task HandleMouseMove(MouseEventArgs e)
+    {
+        if (!_flagMouseIsDown || _isAuto || _isInitial)
+            return;
+
+        // Since the objective of this method is to alter the values of the Link, work will be done in the original coordinates, not SVG's.
+
+        Vector2D positionMouse = new Vector2D(e.OffsetX, e.OffsetY).FromSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+
+        Vector2D positionStartNode = Link.start.position;
+        Vector2D positionEndNode = Link.end.position;
+
+        double distanceMouseToLine = Vector2D.DistanceToLine(positionMouse, positionStartNode, positionEndNode);
+
+        if (distanceMouseToLine < 10)
+        {
+            Link.radiusPercentage = 0;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        double distanceTransition = (positionEndNode - positionStartNode).Length();
+        double radiusTransition = distanceTransition / 2;
+        
+        Vector2D positionTransitionMiddle = positionStartNode.Middle(positionEndNode);
+
+        Vector2D directionTransition = (positionEndNode - positionStartNode).Normalized();
+        Vector2D directionPerpendicular = directionTransition.Perpendicular();
+
+        Vector2D positionArcCenter = Vector2D.FindCenter(positionMouse, positionStartNode, positionEndNode);
+
+        Vector2D directionStartToMouse = (positionMouse - positionStartNode).Normalized();
+
+        double radiusArc = (positionArcCenter - positionStartNode).Length();
+        int valueSide = directionTransition.Cross(directionStartToMouse) < 0 ? 1 : -1;
+
+        Vector2D positionArcSide = positionArcCenter + directionPerpendicular * radiusArc * valueSide;
+
+        double distanceArcSideToMiddle = (positionArcSide - positionTransitionMiddle).Length();
+
+        double ratioModule = distanceArcSideToMiddle / radiusTransition;
+
+        Link.radiusPercentage = valueSide * ratioModule;// * Math.Min(1, ratioModule);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private double FindRadius(Vector2D center, Vector2D point)
+    {
+        return (center - point).Length();
+    }
+}

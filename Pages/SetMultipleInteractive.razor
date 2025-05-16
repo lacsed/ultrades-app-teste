@@ -1,0 +1,82 @@
+﻿@using UltraDES
+@inject IJSRuntime JsRuntime;
+
+@if (!computing)
+{
+    <div>
+        
+        <article class="message is-dark">
+            <div class="message-header">
+                <span>Plants</span>
+            </div>
+            <div style="max-height: 250px; overflow: auto;" class="message-body">
+                @foreach (var g in plants)
+                {
+                    var key = g.Key;
+                    <div class="field">
+                        <label class="label">
+                            <input type="checkbox" @bind="plants[key]"> Automaton @key
+                        </label>
+                    </div>
+                }
+            </div>
+        </article>
+
+        <div class="field is-horizontal">
+            <label class="field-label" for="trans">Columns:</label>
+            <div class="field-body is-grouped">
+                <div class="select">
+                    <select id="trans" @bind="colsNum">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="button is-success" @onclick="Create">Multiple Interactive</button>
+            <button class="button is-danger" @onclick="OnCancel">Cancel</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="pageloader is-active" style="background: #287ef0"><span class="title">Computing</span></div>
+}
+
+@code {
+    [Parameter] public Action<List<string>,int> OnSuccess { get; set; }
+    [Parameter] public Action OnCancel { get; set; }
+    [Parameter] public Dictionary<string, DeterministicFiniteAutomaton> Automata { get; set; }
+
+    private int colsNum= 1;
+
+    private Dictionary<string, bool> plants;
+    private bool computing = false;
+    protected override void OnInitialized()
+    {
+        plants = Automata.ToDictionary(kvp => kvp.Key, kvp => false);
+    }
+
+    private async void Create()
+    {
+        try
+        {
+            computing = true;
+            await Task.Delay(1);
+
+            var S = plants.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+            OnSuccess(S,colsNum);
+        }
+        catch (Exception ex)
+        {
+            computing = false;
+            await Task.Delay(1);
+            JsRuntime.Alert($"Error: {ex.Message}");
+            OnCancel();
+        }
+    }
+}

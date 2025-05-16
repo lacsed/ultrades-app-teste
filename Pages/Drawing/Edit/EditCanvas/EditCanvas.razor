@@ -1,0 +1,232 @@
+@namespace UltraDESDraw.Components
+@inject SharedDataService SharedDataService
+
+<svg id="canvas" @onclick="HandleClick" @ondblclick="HandleDoubleClick" @onmouseleave="HandleMouseLeave" 
+            @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmousemove="HandleMouseMove" @onkeydown="HandleKeyDown" 
+            @onkeyup="HandleKeyUp" @onwheel="HandleWheel" style="@SharedDataService.GetCursorType() width: 100%;" class="canvas" tabindex="0">
+    @foreach (Node node in SharedDataService.Graph.graphNodes)
+    {
+        <EditNode Node="node"/>
+    }
+    @foreach (Link link in SharedDataService.Graph.graphLinks)
+    {
+        <EditLink Link="link"/>
+    }
+    @if(SharedDataService.GetIsCreatingLink())
+    {
+        <EditTempLink/>
+    }
+</svg>
+
+
+@code {    
+    @* [Parameter]
+    public Simulation? simulation { get; set; }
+    [Parameter]
+    public EventCallback<Simulation> simulationChanged { get; set; }
+
+    private Vector2D svgOrigin = new Vector2D(); *@
+
+    private bool holdingShift = false;
+    private bool holdingSpace = false;
+    private bool mouseDown = false;
+
+    private bool isCreatingTempLink = false;
+    private bool isCreatingTransition = false;
+    private bool isPanning = false;
+    private bool movingElement = false;
+
+    private Node? activeNodeReference;
+    private Link? activeLinkReference;
+
+    private Node? insideNodeReference;
+
+    private Vector2D tempLinkOriginState;
+    private Vector2D tempLinkDestinationState;
+    private Guid tempLinkOriginID;
+    private Guid tempLinkDestinationID;
+
+    private Vector2D tempLinkOrigin;
+    private Vector2D tempLinkMouse;
+    private Vector2D mousePosition;
+
+    protected override void OnInitialized()
+    {
+        SharedDataService.OnChange += StateHasChanged;
+    }
+
+    protected void Dispose()
+    {
+        SharedDataService.OnChange -= StateHasChanged;
+    }
+
+
+    private async Task HandleNodeChanged()
+    {
+        @* await simulationChanged.InvokeAsync(simulation); *@
+    }
+
+    private async void HandleDoubleClick(MouseEventArgs e)
+    {
+        Vector2D mousePosition = new Vector2D(e.OffsetX, e.OffsetY);
+        Vector2D newNodePosition = mousePosition.FromSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+        Node newNode = new Node(newNodePosition, "", false);
+        SharedDataService.Graph.graphNodes.Add(newNode);
+        SharedDataService.NotifyDataChanged();
+        //SharedDataService.Graph.AddNode(mousePosition);
+        @* Vector2D mousePosition = new Vector2D(e.OffsetX, e.OffsetY);
+        Vector2D newParticlePosition = mousePosition.FromSvgCoordinates(svgOrigin);
+        Particle newParticle = new Particle(newParticlePosition, "", false);
+        simulation.particles.Add(newParticle);
+        await simulationChanged.InvokeAsync(simulation);
+        StateHasChanged(); *@
+    }
+
+    private void HandleClick(MouseEventArgs e)
+    {
+        if (e.Button == 0)
+        {
+            if (SharedDataService.InsideNode == null)
+            {
+                SharedDataService.SelectedNode = null;
+                SharedDataService.NotifyDataChanged();
+            }
+        }
+    }
+
+    private void HandleMouseLeave(MouseEventArgs e)
+    {
+        mouseDown = false;
+    }
+
+    private async Task HandleMouseDown(MouseEventArgs e)
+    {
+        SharedDataService.CanvasMouseDownEvent(e);
+    }
+
+    private async Task HandleMouseUp(MouseEventArgs e)
+    {
+        SharedDataService.CanvasMouseUpEvent(e);
+    }
+
+    private async Task HandleNodeSelected(Node node)
+    {
+        @* if (activeLinkReference != null)
+        {
+            await activeLinkReference.HandleLoseFocus();
+            activeLinkReference = null;
+            activeNodeReference = node;
+            await activeNodeReference.HandleGainFocus();
+        }
+        else if (activeNodeReference != null && activeNodeReference != node)
+        {
+            await activeNodeReference.HandleLoseFocus();
+            activeNodeReference = node;
+            await activeNodeReference.HandleGainFocus();
+        }
+        else
+        {
+            activeNodeReference = node;
+            await activeNodeReference.HandleGainFocus();
+        }
+        movingElement = true; *@
+    }
+
+    private async Task HandleLinkSelected(Link link)
+    {
+        @* if (activeNodeReference != null)
+        {
+            await activeNodeReference.HandleLoseFocus();
+            activeNodeReference = null;
+            activeLinkReference = link;
+            await activeLinkReference.HandleGainFocus();
+        }
+        else if (activeLinkReference != null && activeLinkReference != link)
+        {
+            await activeLinkReference.HandleLoseFocus();
+            activeLinkReference = link;
+            await activeLinkReference.HandleGainFocus();
+        }
+        else
+        {
+            activeLinkReference = link;
+            await activeLinkReference.HandleGainFocus();
+        }
+        movingElement = true; *@
+    }
+
+    private void HandleLinkDeSelected(Link link)
+    {
+        if (activeLinkReference == link)
+            activeLinkReference = null;
+    }
+
+    private async Task HandleMouseMove(MouseEventArgs e)
+    {
+        SharedDataService.CanvasMouseMoveEvent(e);
+    }
+
+    // WHAT NODE THE MOUSE IS INSIDE
+
+    private void HandleEnterNode(Node node)
+    {
+        @* insideNodeReference = node;
+        if (isCreatingTempLink)
+        {
+            tempLinkDestinationState = node.position.ToSvgCoordinates(svgOrigin);
+            tempLinkDestinationID = node.nodeId;
+        } *@
+    }
+
+    private void HandleLeaveNode(Node node)
+    {
+        insideNodeReference = null;
+        if (isCreatingTempLink)
+        {
+            tempLinkDestinationState = null;
+            tempLinkDestinationID = Guid.Empty;
+        }
+    }
+
+    // KEYBOARD EVENTS
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        SharedDataService.CanvasKeyDownEvent(e);
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        SharedDataService.CanvasKeyUpEvent(e);
+    }
+    
+    private void HandleWheel(WheelEventArgs wheel)
+    {
+        
+    }
+
+    private async Task AddNewLink()
+    {
+        @* SMTransition newLink = new SMTransition(TransitionType.State, simulation.particles.Find(x => x.id == tempLinkOriginID), simulation.particles.Find(x => x.id == tempLinkDestinationID), "");
+        Spring newSpring = new Spring(simulation.particles.Find(x => x.id == tempLinkOriginID), simulation.particles.Find(x => x.id == tempLinkDestinationID));
+        if (activeLinkReference != null)
+        {
+            await activeLinkReference.HandleLoseFocus();
+            activeLinkReference = null;
+        }
+        else if (activeNodeReference != null)
+        {
+            await activeNodeReference.HandleLoseFocus();
+            activeNodeReference = null;
+        }
+
+        tempLinkOriginState = null;
+        tempLinkDestinationState = null;
+        isCreatingTempLink = false;
+
+        simulation.transitions.Add(newLink);
+        simulation.springs.Add(newSpring);
+
+        await InvokeAsync(StateHasChanged); *@
+    }
+}
