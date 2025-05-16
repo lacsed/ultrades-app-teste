@@ -27,8 +27,4 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="AutoAVL\AutoAVL.csproj" />
-  </ItemGroup>
-
 </Project>
