@@ -1,0 +1,161 @@
+/* /Pages/Drawing/Edit/EditCanvas/EditCanvas.razor.rz.scp.css */
+#canvas[b-eh4ls1xc0y] {
+  width: 100%;
+  height: 100%;
+}/*# sourceMappingURL=EditCanvas.razor.css.map */
+/* /Pages/Drawing/Edit/EditLink/EditLink.razor.rz.scp.css */
+/*# sourceMappingURL=EditLink.razor.css.map */
+/* /Pages/Drawing/Edit/EditMenu/EditMenu.razor.rz.scp.css */
+#container[b-bhv0mnngtw] {
+  width: 100%;
+  height: 100%;
+  background-color: #E0E0E0;
+}
+
+.cluster[b-bhv0mnngtw] {
+  width: 100px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cluster-options[b-bhv0mnngtw] {
+  height: 100%;
+  width: 100px;
+  border: 5px solid #005F73;
+  border-radius: 10px;
+}/*# sourceMappingURL=EditMenu.razor.css.map */
+/* /Pages/Drawing/Edit/EditNode/EditNode.razor.rz.scp.css */
+/*# sourceMappingURL=EditNode.razor.css.map */
+/* /Pages/Drawing/Edit/EditPanel/EditPanel.razor.rz.scp.css */
+#container[b-th5f30lv43] {
+  background-color: #E0E0E0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  border-radius: 10px 10px 0px 0px;
+  padding-top: 20px;
+}
+
+.label[b-th5f30lv43] {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: gray;
+}
+
+.icon[b-th5f30lv43] {
+  width: 20px;
+  height: auto;
+}
+
+.node-entry[b-th5f30lv43] {
+  max-width: 100%;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+.node-entry .node-name[b-th5f30lv43] {
+  max-width: 200px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.node-entry .node-entry-buttons[b-th5f30lv43] {
+  justify-self: flex-end;
+  display: flex;
+  flex-direction: row;
+}
+
+ul[b-th5f30lv43] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50%;
+}
+
+li[b-th5f30lv43] {
+  width: 80%;
+  overflow: auto;
+  word-wrap: break-word;
+}
+
+.no-select[b-th5f30lv43] {
+  user-select: none; /* Standard syntax */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+}/*# sourceMappingURL=EditPanel.razor.css.map */
+/* /Pages/Drawing/Edit/EditTempLink/EditTempLink.razor.rz.scp.css */
+/*# sourceMappingURL=EditTempLink.razor.css.map */
+/* /Shared/MainLayout.razor.rz.scp.css */
+.page[b-1d4bwikjam] {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.main[b-1d4bwikjam] {
+    flex: 1;
+}
+
+.sidebar[b-1d4bwikjam] {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+.top-row[b-1d4bwikjam] {
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #d6d5d5;
+    justify-content: flex-end;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+}
+
+    .top-row[b-1d4bwikjam]  a, .top-row .btn-link[b-1d4bwikjam] {
+        white-space: nowrap;
+        margin-left: 1.5rem;
+    }
+
+    .top-row a:first-child[b-1d4bwikjam] {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+@media (max-width: 640.98px) {
+    .top-row:not(.auth)[b-1d4bwikjam] {
+        display: none;
+    }
+
+    .top-row.auth[b-1d4bwikjam] {
+        justify-content: space-between;
+    }
+
+    .top-row a[b-1d4bwikjam], .top-row .btn-link[b-1d4bwikjam] {
+        margin-left: 0;
+    }
+}
+
+@media (min-width: 641px) {
+    .page[b-1d4bwikjam] {
+        flex-direction: row;
+    }
+
+    .sidebar[b-1d4bwikjam] {
+        width: 250px;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+    }
+
+    .top-row[b-1d4bwikjam] {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .main > div[b-1d4bwikjam] {
+        padding-left: 2rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
