@@ -35,8 +35,16 @@
         </div>
     </app>
 
-    <script src="_framework/blazor.webassembly.js"></script>
-    <script>navigator.serviceWorker.register('service-worker.js');</script>
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <script>
+        Blazor.start({
+            culture: 'en-US'
+        });
+    </script>
+    <script>
+        navigator.serviceWorker.register('service-worker.js');
+    </script>
+
 </body>
 
 </html>
