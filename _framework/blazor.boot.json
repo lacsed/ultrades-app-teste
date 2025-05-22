@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "UltraDESWeb",
   "resources": {
-    "hash": "sha256-ltdIViYEe54loiqUDh8qQKj4OKgcsRh8y8grA3ocgHo=",
+    "hash": "sha256-wLLDFLQE/RHkShgby8JAI1oN1yECHGDgCyHTje8MTf8=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Components.4jqn3k9cva.wasm": "Microsoft.AspNetCore.Components.wasm",
       "Microsoft.AspNetCore.Components.Web.2ukb6az3i3.wasm": "Microsoft.AspNetCore.Components.Web.wasm",
@@ -55,7 +55,7 @@
       "System.Runtime.Numerics.ie4cp9o79c.wasm": "System.Runtime.Numerics.wasm",
       "System.Runtime.Serialization.Formatters.zpwz8dnrm5.wasm": "System.Runtime.Serialization.Formatters.wasm",
       "System.Runtime.Serialization.Primitives.4bjsxjkd3k.wasm": "System.Runtime.Serialization.Primitives.wasm",
-      "System.Runtime.xcowvtgjro.wasm": "System.Runtime.wasm",
+      "System.Runtime.ogkhhlb79y.wasm": "System.Runtime.wasm",
       "System.Security.Cryptography.9sdlw6b3fc.wasm": "System.Security.Cryptography.wasm",
       "System.Text.Encoding.Extensions.pdxtt9y857.wasm": "System.Text.Encoding.Extensions.wasm",
       "System.Text.Encodings.Web.n7nth9auq4.wasm": "System.Text.Encodings.Web.wasm",
@@ -69,8 +69,8 @@
       "System.Xml.XmlSerializer.x1fy924me1.wasm": "System.Xml.XmlSerializer.wasm",
       "System.ezrw3d5kw2.wasm": "System.wasm",
       "netstandard.4ugo370f6v.wasm": "netstandard.wasm",
-      "System.Private.CoreLib.9nkd5rmp9o.wasm": "System.Private.CoreLib.wasm",
-      "UltraDESWeb.pd74se7wwl.wasm": "UltraDESWeb.wasm",
+      "System.Private.CoreLib.sbyfys6als.wasm": "System.Private.CoreLib.wasm",
+      "UltraDESWeb.0cfr46bf7z.wasm": "UltraDESWeb.wasm",
       "dotnet.js": "dotnet.js",
       "dotnet.native.uhsveqo9bs.js": "dotnet.native.js",
       "dotnet.native.swgexbmoy7.wasm": "dotnet.native.wasm",
@@ -95,7 +95,7 @@
     },
     "coreAssembly": {
       "System.Runtime.InteropServices.JavaScript.5pcrya9j00.wasm": "sha256-92zUoi9qwW2rZalWHIYTUNdUv+uUJLg6ZLS4Aj0eqHk=",
-      "System.Private.CoreLib.9nkd5rmp9o.wasm": "sha256-xbrRh/Wnp28IF5cEx14HTunEmCdg80oJ9bxsIZ64avI="
+      "System.Private.CoreLib.sbyfys6als.wasm": "sha256-iI1ak/4ijVEts9sRiDUnssOm08MRcKz8J8oJJqVVqnQ="
     },
     "assembly": {
       "Microsoft.AspNetCore.Components.4jqn3k9cva.wasm": "sha256-8NZDryTk/zn/pN2Qqe3/b6YL2TSa15ry7oXvBAKLH6U=",
@@ -149,7 +149,7 @@
       "System.Runtime.Numerics.ie4cp9o79c.wasm": "sha256-tqFA39HlBz/YoGNBvl+/RWSPQ9LeC/8XaDXVPwAAWUg=",
       "System.Runtime.Serialization.Formatters.zpwz8dnrm5.wasm": "sha256-meOJWQhTJHyNQloVKu3wc1cgeXTCnCapJ/vzKNXi1cE=",
       "System.Runtime.Serialization.Primitives.4bjsxjkd3k.wasm": "sha256-wL0VtCmxuZJzPdRMVOdvtaPmCoIuLUKXBh1Snq1G8Iw=",
-      "System.Runtime.xcowvtgjro.wasm": "sha256-r+n+P/itngW31daj19JEd3LCWCl1ciyLPQxt1VStRXU=",
+      "System.Runtime.ogkhhlb79y.wasm": "sha256-2BYq0ftR6md7ScljH4hwOKft3LC4Th/r973JBjYKPEs=",
       "System.Security.Cryptography.9sdlw6b3fc.wasm": "sha256-916NMtB8z+PC2jHr8T1amNxcAFceh/09VYdth10iSDE=",
       "System.Text.Encoding.Extensions.pdxtt9y857.wasm": "sha256-w5BwYak22XKVBVhcVTdvJwLUzGTrnRdR7HuXyamu40Q=",
       "System.Text.Encodings.Web.n7nth9auq4.wasm": "sha256-PVCrhDn4h1OgqMGUhEs25nlp1YW7mMfPoEgZxltnMoo=",
@@ -163,7 +163,7 @@
       "System.Xml.XmlSerializer.x1fy924me1.wasm": "sha256-S85jw6X/adCd2ojI2Thl1ya0Z/hq0VAJZdfjDC70O4E=",
       "System.ezrw3d5kw2.wasm": "sha256-ViNRvhyxlTugIlqJHamw/HwbXlg/YWcrANmxuTM0tfg=",
       "netstandard.4ugo370f6v.wasm": "sha256-PIpwKNofM1o+DcKlBoBvhul44SwTM/4dUYrvMpQkhH4=",
-      "UltraDESWeb.pd74se7wwl.wasm": "sha256-o/3UJPs9sabNSw1JpFyhOkhVClXP1PORKvAhh5p/irE="
+      "UltraDESWeb.0cfr46bf7z.wasm": "sha256-oK23bn+jQJqm1fxAy6gKUYRu/A3PCC2fJ7Y2zlrfHDY="
     }
   },
   "cacheBootResources": true,
