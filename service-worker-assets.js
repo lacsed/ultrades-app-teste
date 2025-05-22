@@ -1,5 +1,5 @@
 self.assetsManifest = {
-  "version": "DK7eacND",
+  "version": "IScY+CzU",
   "assets": [
     {
       "hash": "sha256-2TjxESpVmds56/lt+i15CpSnti90CsOXLDFv4dTMPhw=",
@@ -174,8 +174,8 @@ self.assetsManifest = {
       "url": "_framework/System.ObjectModel.4ak779olmw.wasm"
     },
     {
-      "hash": "sha256-iI1ak/4ijVEts9sRiDUnssOm08MRcKz8J8oJJqVVqnQ=",
-      "url": "_framework/System.Private.CoreLib.sbyfys6als.wasm"
+      "hash": "sha256-xbrRh/Wnp28IF5cEx14HTunEmCdg80oJ9bxsIZ64avI=",
+      "url": "_framework/System.Private.CoreLib.9nkd5rmp9o.wasm"
     },
     {
       "hash": "sha256-hib7oGxRwvilE5dv7tsoHoo0tzjB+RQpMy2yT8VGwuI=",
@@ -222,8 +222,8 @@ self.assetsManifest = {
       "url": "_framework/System.Runtime.Serialization.Primitives.4bjsxjkd3k.wasm"
     },
     {
-      "hash": "sha256-2BYq0ftR6md7ScljH4hwOKft3LC4Th/r973JBjYKPEs=",
-      "url": "_framework/System.Runtime.ogkhhlb79y.wasm"
+      "hash": "sha256-r+n+P/itngW31daj19JEd3LCWCl1ciyLPQxt1VStRXU=",
+      "url": "_framework/System.Runtime.xcowvtgjro.wasm"
     },
     {
       "hash": "sha256-916NMtB8z+PC2jHr8T1amNxcAFceh/09VYdth10iSDE=",
@@ -278,11 +278,11 @@ self.assetsManifest = {
       "url": "_framework/UltraDES.p62p0jt529.wasm"
     },
     {
-      "hash": "sha256-oK23bn+jQJqm1fxAy6gKUYRu/A3PCC2fJ7Y2zlrfHDY=",
-      "url": "_framework/UltraDESWeb.0cfr46bf7z.wasm"
+      "hash": "sha256-SPFjcRiEzQaBSw+hBzPQO0d6+Cv/ZK22afVOegPwR0Y=",
+      "url": "_framework/UltraDESWeb.c3c60vfrze.wasm"
     },
     {
-      "hash": "sha256-sIV9ZwujcSCz0nwgUJpl/EZVVSEQmjq8Vs/G6pJjSDo=",
+      "hash": "sha256-thv5FEGvqwEZK+prPRxfy9dEb2B8c4Y/BWECx2MoH6g=",
       "url": "_framework/blazor.boot.json"
     },
     {
@@ -306,16 +306,8 @@ self.assetsManifest = {
       "url": "_framework/dotnet.runtime.5nhp1wfg9b.js"
     },
     {
-      "hash": "sha256-SZLtQnRc0JkwqHab0VUVP7T3uBPSeYzxzDnpxPpUnHk=",
-      "url": "_framework/icudt_CJK.tjcz0u77k5.dat"
-    },
-    {
-      "hash": "sha256-8fItetYY8kQ0ww6oxwTLiT3oXlBwHKumbeP2pRF4yTc=",
-      "url": "_framework/icudt_EFIGS.tptq2av103.dat"
-    },
-    {
-      "hash": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs=",
-      "url": "_framework/icudt_no_CJK.lfu7j35m59.dat"
+      "hash": "sha256-tO5O5YzMTVSaKBboxAqezOQL9ewmupzV2JrB5Rkc8a4=",
+      "url": "_framework/icudt.oh1zvcfom8.dat"
     },
     {
       "hash": "sha256-PIpwKNofM1o+DcKlBoBvhul44SwTM/4dUYrvMpQkhH4=",
@@ -402,7 +394,7 @@ self.assetsManifest = {
       "url": "img/logo_lacsed.png"
     },
     {
-      "hash": "sha256-Nz9+l8jUy/QiJ0f6/IBw9uaryamVnjZsdUrDQ2T04OI=",
+      "hash": "sha256-TZaAcQpJidNW7f/t9CmDJrO2pYxl9NceGia8xF1ladc=",
       "url": "index.html"
     },
     {

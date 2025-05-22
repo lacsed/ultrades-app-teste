@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "UltraDESWeb",
   "resources": {
-    "hash": "sha256-wLLDFLQE/RHkShgby8JAI1oN1yECHGDgCyHTje8MTf8=",
+    "hash": "sha256-nSZ3ncBO5Nvh0KF4nbWP7P2btBJc4pK3WxIxm8fDm0E=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Components.4jqn3k9cva.wasm": "Microsoft.AspNetCore.Components.wasm",
       "Microsoft.AspNetCore.Components.Web.2ukb6az3i3.wasm": "Microsoft.AspNetCore.Components.Web.wasm",
@@ -55,7 +55,7 @@
       "System.Runtime.Numerics.ie4cp9o79c.wasm": "System.Runtime.Numerics.wasm",
       "System.Runtime.Serialization.Formatters.zpwz8dnrm5.wasm": "System.Runtime.Serialization.Formatters.wasm",
       "System.Runtime.Serialization.Primitives.4bjsxjkd3k.wasm": "System.Runtime.Serialization.Primitives.wasm",
-      "System.Runtime.ogkhhlb79y.wasm": "System.Runtime.wasm",
+      "System.Runtime.xcowvtgjro.wasm": "System.Runtime.wasm",
       "System.Security.Cryptography.9sdlw6b3fc.wasm": "System.Security.Cryptography.wasm",
       "System.Text.Encoding.Extensions.pdxtt9y857.wasm": "System.Text.Encoding.Extensions.wasm",
       "System.Text.Encodings.Web.n7nth9auq4.wasm": "System.Text.Encodings.Web.wasm",
@@ -69,15 +69,13 @@
       "System.Xml.XmlSerializer.x1fy924me1.wasm": "System.Xml.XmlSerializer.wasm",
       "System.ezrw3d5kw2.wasm": "System.wasm",
       "netstandard.4ugo370f6v.wasm": "netstandard.wasm",
-      "System.Private.CoreLib.sbyfys6als.wasm": "System.Private.CoreLib.wasm",
-      "UltraDESWeb.0cfr46bf7z.wasm": "UltraDESWeb.wasm",
+      "System.Private.CoreLib.9nkd5rmp9o.wasm": "System.Private.CoreLib.wasm",
+      "UltraDESWeb.c3c60vfrze.wasm": "UltraDESWeb.wasm",
       "dotnet.js": "dotnet.js",
       "dotnet.native.uhsveqo9bs.js": "dotnet.native.js",
       "dotnet.native.swgexbmoy7.wasm": "dotnet.native.wasm",
       "dotnet.runtime.5nhp1wfg9b.js": "dotnet.runtime.js",
-      "icudt_CJK.tjcz0u77k5.dat": "icudt_CJK.dat",
-      "icudt_EFIGS.tptq2av103.dat": "icudt_EFIGS.dat",
-      "icudt_no_CJK.lfu7j35m59.dat": "icudt_no_CJK.dat"
+      "icudt.oh1zvcfom8.dat": "icudt.dat"
     },
     "jsModuleNative": {
       "dotnet.native.uhsveqo9bs.js": "sha256-/ifJokfQvXKw1hEziCkYR9SOJIKSdGG/UKw5gbLWrj0="
@@ -89,13 +87,11 @@
       "dotnet.native.swgexbmoy7.wasm": "sha256-HHqsNtcX76Ik012KVAobmCLooIZ2znhTFCqfijzEdi0="
     },
     "icu": {
-      "icudt_CJK.tjcz0u77k5.dat": "sha256-SZLtQnRc0JkwqHab0VUVP7T3uBPSeYzxzDnpxPpUnHk=",
-      "icudt_EFIGS.tptq2av103.dat": "sha256-8fItetYY8kQ0ww6oxwTLiT3oXlBwHKumbeP2pRF4yTc=",
-      "icudt_no_CJK.lfu7j35m59.dat": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs="
+      "icudt.oh1zvcfom8.dat": "sha256-tO5O5YzMTVSaKBboxAqezOQL9ewmupzV2JrB5Rkc8a4="
     },
     "coreAssembly": {
       "System.Runtime.InteropServices.JavaScript.5pcrya9j00.wasm": "sha256-92zUoi9qwW2rZalWHIYTUNdUv+uUJLg6ZLS4Aj0eqHk=",
-      "System.Private.CoreLib.sbyfys6als.wasm": "sha256-iI1ak/4ijVEts9sRiDUnssOm08MRcKz8J8oJJqVVqnQ="
+      "System.Private.CoreLib.9nkd5rmp9o.wasm": "sha256-xbrRh/Wnp28IF5cEx14HTunEmCdg80oJ9bxsIZ64avI="
     },
     "assembly": {
       "Microsoft.AspNetCore.Components.4jqn3k9cva.wasm": "sha256-8NZDryTk/zn/pN2Qqe3/b6YL2TSa15ry7oXvBAKLH6U=",
@@ -149,7 +145,7 @@
       "System.Runtime.Numerics.ie4cp9o79c.wasm": "sha256-tqFA39HlBz/YoGNBvl+/RWSPQ9LeC/8XaDXVPwAAWUg=",
       "System.Runtime.Serialization.Formatters.zpwz8dnrm5.wasm": "sha256-meOJWQhTJHyNQloVKu3wc1cgeXTCnCapJ/vzKNXi1cE=",
       "System.Runtime.Serialization.Primitives.4bjsxjkd3k.wasm": "sha256-wL0VtCmxuZJzPdRMVOdvtaPmCoIuLUKXBh1Snq1G8Iw=",
-      "System.Runtime.ogkhhlb79y.wasm": "sha256-2BYq0ftR6md7ScljH4hwOKft3LC4Th/r973JBjYKPEs=",
+      "System.Runtime.xcowvtgjro.wasm": "sha256-r+n+P/itngW31daj19JEd3LCWCl1ciyLPQxt1VStRXU=",
       "System.Security.Cryptography.9sdlw6b3fc.wasm": "sha256-916NMtB8z+PC2jHr8T1amNxcAFceh/09VYdth10iSDE=",
       "System.Text.Encoding.Extensions.pdxtt9y857.wasm": "sha256-w5BwYak22XKVBVhcVTdvJwLUzGTrnRdR7HuXyamu40Q=",
       "System.Text.Encodings.Web.n7nth9auq4.wasm": "sha256-PVCrhDn4h1OgqMGUhEs25nlp1YW7mMfPoEgZxltnMoo=",
@@ -163,13 +159,13 @@
       "System.Xml.XmlSerializer.x1fy924me1.wasm": "sha256-S85jw6X/adCd2ojI2Thl1ya0Z/hq0VAJZdfjDC70O4E=",
       "System.ezrw3d5kw2.wasm": "sha256-ViNRvhyxlTugIlqJHamw/HwbXlg/YWcrANmxuTM0tfg=",
       "netstandard.4ugo370f6v.wasm": "sha256-PIpwKNofM1o+DcKlBoBvhul44SwTM/4dUYrvMpQkhH4=",
-      "UltraDESWeb.0cfr46bf7z.wasm": "sha256-oK23bn+jQJqm1fxAy6gKUYRu/A3PCC2fJ7Y2zlrfHDY="
+      "UltraDESWeb.c3c60vfrze.wasm": "sha256-SPFjcRiEzQaBSw+hBzPQO0d6+Cv/ZK22afVOegPwR0Y="
     }
   },
   "cacheBootResources": true,
   "debugLevel": 0,
   "linkerEnabled": true,
-  "globalizationMode": "sharded",
+  "globalizationMode": "all",
   "extensions": {
     "blazor": {}
   }
