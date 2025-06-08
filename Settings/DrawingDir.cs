@@ -10,7 +10,7 @@ namespace AutoAVL.Settings
     public class DrawingDir
     {
         // Node settings.
-        public double nodeRadius = 60.0f;
+        public double nodeRadius = 30.0f;
         public double autoLinkRadius = 30.0f;
         public double autoLinkDistanceRatio = 0.8f;
         public double borderWidth = 2.0f;
