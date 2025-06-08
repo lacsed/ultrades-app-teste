@@ -92,6 +92,77 @@
 
     private string linkColor = "black";
 
+    private readonly Dictionary<string, string> _greekLetterMap = new Dictionary<string, string>
+    {
+        // Lowercase Greek Letters
+        { "\\alpha", "α" },
+        { "\\beta", "β" },
+        { "\\gamma", "γ" },
+        { "\\delta", "δ" },
+        { "\\epsilon", "ε" },
+        { "\\zeta", "ζ" },
+        { "\\eta", "η" },
+        { "\\theta", "θ" },
+        { "\\iota", "ι" },
+        { "\\kappa", "κ" },
+        { "\\lambda", "λ" },
+        { "\\mu", "μ" },
+        { "\\nu", "ν" },
+        { "\\xi", "ξ" },
+        { "\\omicron", "ο" },
+        { "\\pi", "π" },
+        { "\\rho", "ρ" },
+        { "\\sigma", "σ" },
+        { "\\tau", "τ" },
+        { "\\upsilon", "υ" },
+        { "\\phi", "φ" },
+        { "\\chi", "χ" },
+        { "\\psi", "ψ" },
+        { "\\omega", "ω" },
+
+        // Uppercase Greek Letters
+        { "\\Alpha", "Α" },
+        { "\\Beta", "Β" },
+        { "\\Gamma", "Γ" },
+        { "\\Delta", "Δ" },
+        { "\\Epsilon", "Ε" },
+        { "\\Zeta", "Ζ" },
+        { "\\Eta", "Η" },
+        { "\\Theta", "Θ" },
+        { "\\Iota", "Ι" },
+        { "\\Kappa", "Κ" },
+        { "\\Lambda", "Λ" },
+        { "\\Mu", "Μ" },
+        { "\\Nu", "Ν" },
+        { "\\Xi", "Ξ" },
+        { "\\Omicron", "Ο" },
+        { "\\Pi", "Π" },
+        { "\\Rho", "Ρ" },
+        { "\\Sigma", "Σ" },
+        { "\\Tau", "Τ" },
+        { "\\Upsilon", "Υ" },
+        { "\\Phi", "Φ" },
+        { "\\Chi", "Χ" },
+        { "\\Psi", "Ψ" },
+        { "\\Omega", "Ω" },
+
+        // Special forms/variants (common in LaTeX)
+        { "\\varepsilon", "ε" }, // Often same as epsilon for practical purposes, but good to include
+        { "\\varkappa", "ϰ" }, // Greek KAPPA symbol
+        { "\\varpi", "ϖ" },   // Greek PI symbol
+        { "\\varrho", "ϱ" },   // Greek RHO symbol
+        { "\\varsigma", "ς" }, // Greek small final sigma
+        { "\\vartheta", "ϑ" }, // Greek THETA symbol
+        { "\\digamma", "Ϝ" },  // archaic Greek letter stigma or digamma (capital)
+        { "\\Digamma", "Ϝ" },  // archaic Greek letter stigma or digamma (capital)
+        { "\\stigma", "ϛ" },   // archaic Greek letter stigma (lowercase)
+        { "\\Stigma", "Ϛ" },   // archaic Greek letter stigma (capital)
+        { "\\coppa", "ϙ" },    // archaic Greek letter koppa (lowercase)
+        { "\\Coppa", "Ϙ" },    // archaic Greek letter koppa (capital)
+        { "\\sampi", "ϡ" },    // archaic Greek letter sampi (lowercase)
+        { "\\Sampi", "Ϡ" }     // archaic Greek letter sampi (capital)
+    };
+
     protected override void OnInitialized()
     {
         _linkName = Link.name;
@@ -318,6 +389,7 @@
         else if (e.Key.Length == 1)
         {
             _linkName += e.Key;
+            ProcessGreekLetterCommands();
         }
         else if (e.Key == "Delete")
         {
@@ -329,6 +401,17 @@
         Link.name = _linkName;
         SharedDataService.UpdateAutomaton();
         SharedDataService.NotifyDataChanged();
+    }
+
+    private void ProcessGreekLetterCommands()
+    {
+        foreach (var entry in _greekLetterMap)
+        {
+            while (Link.name.Contains(entry.Key))
+            {
+                Link.name = Link.name.Replace(entry.Key, entry.Value);
+            }
+        }
     }
 
 
