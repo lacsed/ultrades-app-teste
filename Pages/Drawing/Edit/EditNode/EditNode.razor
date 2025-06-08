@@ -70,7 +70,7 @@
 
             SharedDataService.NotifyDataChanged();
         }
-        else if ((e.Key.Length == 1 && char.IsLetterOrDigit(e.Key[0])))
+        else if (e.Key.Length == 1)
         {
             Node.name += e.Key;
             SharedDataService.NotifyDataChanged();
