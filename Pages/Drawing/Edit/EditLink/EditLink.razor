@@ -315,11 +315,7 @@
                     _linkName = _linkName.Substring(0, _linkName.Length - 1);
             }
         }
-        else if (e.Key.Length == 1 && 
-                (char.IsLetterOrDigit(e.Key[0]) || 
-                e.Key == "," || 
-                e.Key == ";" || 
-                e.Key == "."))
+        else if (e.Key.Length == 1)
         {
             _linkName += e.Key;
         }
