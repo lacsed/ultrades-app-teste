@@ -84,7 +84,7 @@ namespace AutoAVL
                 Event trigger = events.Find(x => x.Alias == link.name);
                 transitions.Add(new Transition(origin, trigger, destination));
             }
-
+            Console.WriteLine("Número de transições antes de recriar = " + transitions.Count);
             try
             {
                 dfa = new DeterministicFiniteAutomaton(transitions, initialState, automatonName);

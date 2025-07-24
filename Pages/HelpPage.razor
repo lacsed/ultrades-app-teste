@@ -1,0 +1,61 @@
+@using global::UltraDES
+
+<div>
+    <div class="field">
+        <label class="label">Double-click on empty canvas</label>
+        <p>Creates a new state at the clicked location.</p>
+    </div>
+
+    <div class="field">
+        <label class="label">Double-click on an existing state</label>
+        <p>Toggles the state between marked and unmarked.</p>
+    </div>
+
+    <div class="field">
+        <label class="label">Double-click on a transition</label>
+        <p>Toggles the transition between controllable and uncontrollable.</p>
+    </div>
+
+    <div class="field">
+        <label class="label">Shift + drag</label>
+        <p>
+            - If starting outside any state: creates an initial transition.<br>
+            - If dragging from one state to another: creates a transition between the two.<br>
+            - If dragging within the same state: creates a self-loop.
+        </p>
+    </div>
+
+    <div class="field">
+        <label class="label">Hold spacebar and drag</label>
+        <p>Pans the canvas view.</p>
+    </div>
+
+    <div class="field">
+        <label class="label">Scroll the mouse wheel</label>
+        <p>Zooms in or out of the canvas.</p>
+    </div>
+
+    <div class="buttons">
+        <button class="button is-danger" @onclick="OnCancel">Cancel</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Action<AbstractState> OnSuccess { get; set; }
+    [Parameter] public Action OnCancel { get; set; }
+
+    private string name = "";
+    private bool opt = false;
+
+    private void Create()
+    {
+        string[] SubStates = name.Split(";"); 
+        foreach(var sub in SubStates)
+        {
+            var q = new State(sub, opt ? Marking.Marked : Marking.Unmarked);
+            OnSuccess(q);
+            StateHasChanged();
+        }
+    }
+
+}

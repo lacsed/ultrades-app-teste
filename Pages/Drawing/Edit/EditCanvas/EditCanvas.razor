@@ -1,9 +1,11 @@
 @namespace UltraDESDraw.Components
 @inject SharedDataService SharedDataService
+@inject IJSRuntime JSRuntime
 
-<svg id="canvas" @onclick="HandleClick" @ondblclick="HandleDoubleClick" @onmouseleave="HandleMouseLeave" 
+<svg id="canvas" @onclick="HandleClick" @ondblclick="HandleDoubleClick" @ondblclick:stopPropagation @ondblclick:preventDefault @onmouseleave="HandleMouseLeave" 
             @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmousemove="HandleMouseMove" @onkeydown="HandleKeyDown" 
-            @onkeyup="HandleKeyUp" @onwheel="HandleWheel" style="@SharedDataService.GetCursorType() width: 100%;" class="canvas" tabindex="0">
+            @onkeyup="HandleKeyUp" @onwheel="HandleWheel" style="@SharedDataService.GetCursorType() width: 100%; height: 100%; outline: none;" class="canvas" tabindex="0"
+            viewBox="@($"{-_offsetX} {-_offsetY} {_svgWidth / _zoomLevel} {_svgHeight / _zoomLevel}")">
     @foreach (Node node in SharedDataService.Graph.graphNodes)
     {
         <EditNode Node="node"/>
@@ -26,6 +28,16 @@
     public EventCallback<Simulation> simulationChanged { get; set; }
 
     private Vector2D svgOrigin = new Vector2D(); *@
+
+    private double _zoomLevel = 1.0;
+    private double _offsetX = 0.0;
+    private double _offsetY = 0.0;
+
+    // Novas variáveis para as dimensões reais do SVG
+    private double _svgWidth = 1000; // Valor padrão inicial, será atualizado
+    private double _svgHeight = 800; // Valor padrão inicial, será atualizado
+
+    private bool _isInitialized = false;
 
     private bool holdingShift = false;
     private bool holdingSpace = false;
@@ -50,6 +62,66 @@
     private Vector2D tempLinkMouse;
     private Vector2D mousePosition;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_isInitialized)
+        {
+            await GetSvgDimensions();
+            _isInitialized = true;
+        }
+    }
+
+    private async Task GetSvgDimensions()
+    {
+        var dimensions = await JSRuntime.InvokeAsync<SvgDimensions>("svgHelper.getSvgDimensions", "canvas");
+        if (dimensions != null)
+        {
+            _svgWidth = dimensions.Width;
+            _svgHeight = dimensions.Height;
+            StateHasChanged(); // Força a renderização após obter as dimensões
+        }
+    }
+
+    // Classe auxiliar para deserializar as dimensões do JS
+    public class SvgDimensions
+    {
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+
+    private void HandleWheel(WheelEventArgs e)
+    {
+        double scaleFactor = 1.06;
+        double oldZoom = _zoomLevel; // Salva o nível de zoom antes de modificá-lo
+
+        // Atualiza o nível de zoom
+        if (e.DeltaY < 0) // Zoom in
+        {
+            _zoomLevel *= scaleFactor;
+        }
+        else if (e.DeltaY > 0) // Zoom out
+        {
+            _zoomLevel /= scaleFactor;
+        }
+
+        // Garante que o zoom esteja dentro dos limites definidos
+        _zoomLevel = Math.Clamp(_zoomLevel, 0.5, 2);
+
+        // --- INÍCIO DA CORREÇÃO ---
+        // Calcula o ajuste necessário para _offsetX e _offsetY para manter o ponto do mouse fixo.
+        // A fórmula é baseada na ideia de que o ponto do mundo sob o mouse
+        // deve permanecer o mesmo antes e depois da mudança de zoom.
+        // _offsetX e _offsetY representam o NEGATIVO do min-x e min-y do viewBox.
+        // A coordenada do mundo sob o mouse (worldX) é dada por:
+        // worldX = -_offsetX + e.OffsetX / zoomLevel
+        // Ao igualar worldX_before e worldX_after e resolver para new_offsetX, obtemos:
+        // new_offsetX = old_offsetX + e.OffsetX * (1 / _zoomLevel - 1 / oldZoom)
+        _offsetX = _offsetX + e.OffsetX * (1 / _zoomLevel - 1 / oldZoom);
+        _offsetY = _offsetY + e.OffsetY * (1 / _zoomLevel - 1 / oldZoom);
+
+        StateHasChanged(); // Força a renderização do componente
+    }
+
     protected override void OnInitialized()
     {
         SharedDataService.OnChange += StateHasChanged;
@@ -68,18 +140,15 @@
 
     private async void HandleDoubleClick(MouseEventArgs e)
     {
-        Vector2D mousePosition = new Vector2D(e.OffsetX, e.OffsetY);
-        Vector2D newNodePosition = mousePosition.FromSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+        Vector2D mouseScreenPosition = new Vector2D(e.OffsetX, e.OffsetY);
+        Vector2D newNodeWorldPosition = new Vector2D(
+            -_offsetX + mouseScreenPosition.x / _zoomLevel,
+            -_offsetY + mouseScreenPosition.y / _zoomLevel
+        );
+        Vector2D newNodePosition = newNodeWorldPosition.FromSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
         Node newNode = new Node(newNodePosition, "", false);
         SharedDataService.Graph.graphNodes.Add(newNode);
         SharedDataService.NotifyDataChanged();
-        //SharedDataService.Graph.AddNode(mousePosition);
-        @* Vector2D mousePosition = new Vector2D(e.OffsetX, e.OffsetY);
-        Vector2D newParticlePosition = mousePosition.FromSvgCoordinates(svgOrigin);
-        Particle newParticle = new Particle(newParticlePosition, "", false);
-        simulation.particles.Add(newParticle);
-        await simulationChanged.InvokeAsync(simulation);
-        StateHasChanged(); *@
     }
 
     private void HandleClick(MouseEventArgs e)
@@ -163,7 +232,7 @@
 
     private async Task HandleMouseMove(MouseEventArgs e)
     {
-        SharedDataService.CanvasMouseMoveEvent(e);
+        SharedDataService.CanvasMouseMoveEvent(e, _offsetX, _offsetY, _zoomLevel);
     }
 
     // WHAT NODE THE MOUSE IS INSIDE
@@ -198,11 +267,6 @@
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
         SharedDataService.CanvasKeyUpEvent(e);
-    }
-    
-    private void HandleWheel(WheelEventArgs wheel)
-    {
-        
     }
 
     private async Task AddNewLink()

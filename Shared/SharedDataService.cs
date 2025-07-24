@@ -114,7 +114,6 @@ namespace UltraDESDraw.Services
                 if (_holdingSpace)
                 {
                     _panning = true;
-                    cursor = "cursor: grabbing;";
                 }
                 else if (e.ShiftKey)
                 {
@@ -155,7 +154,7 @@ namespace UltraDESDraw.Services
                 if (_panning)
                 {
                     _panning = false;
-                    cursor = "cursor: grab;";
+                    cursor = "cursor: default;";
                 } 
                 else if (_creatingLink)
                 {
@@ -166,6 +165,7 @@ namespace UltraDESDraw.Services
                             var newLink = new Link(EndNode, TempLinkStart.FromSvgCoordinates(this.Graph.svgCanvas.SVGOrigin()), false);
                             newLink.radiusPercentage = 0;
                             Graph.AddInitialLink(newLink);
+                            Console.WriteLine("Novo link inicial feito");
                         }
                         else
                         {
@@ -216,10 +216,9 @@ namespace UltraDESDraw.Services
                     Box encompassingBox = Graph.GetCanvasLimits();
                     Vector2D newSVGOrigin = encompassingBox.GetTopLeft();
                     Graph.svgCanvas.ChangeOrigin(newSVGOrigin);
+                    cursor = "cursor: default;";
                 }
                 _holdingSpace = false;
-                cursor = "cursor: default;";
-                _panning = false;
                 NotifyDataChanged();
             }
             else if (e.Key == "Shift")
@@ -228,23 +227,29 @@ namespace UltraDESDraw.Services
             }
         }
 
-        public void CanvasMouseMoveEvent(MouseEventArgs e)
+        public void CanvasMouseMoveEvent(MouseEventArgs e, double _offsetX, double _offsetY, double zoomScale)
         {
-            _mousePosition = new Vector2D(e.OffsetX, e.OffsetY);
+            double worldMouseX = -_offsetX + e.OffsetX / zoomScale;
+            double worldMouseY = -_offsetY + e.OffsetY / zoomScale;
+
+            _mousePosition = new Vector2D(worldMouseX, worldMouseY);
+
+            double MovementX = e.MovementX / zoomScale;
+            double MovementY = e.MovementY / zoomScale;
 
             if (_panning)
             {
-                Graph.svgCanvas.MoveOrigin(new Vector2D(-e.MovementX, e.MovementY));
+                Graph.svgCanvas.MoveOrigin(new Vector2D(-MovementX, MovementY));
                 NotifyDataChanged();
             }
             else if (_movingNode)
             {
-                SelectedNode.position += new Vector2D(e.MovementX, -e.MovementY);
+                SelectedNode.position += new Vector2D(MovementX, -MovementY);
                 NotifyDataChanged();
             }
             else if (_movingLink)
             {
-                SelectedLink.HandleMouseMove(e);
+                SelectedLink.HandleMouseMove(_mousePosition);
             }
             else if (_creatingLink)
             {

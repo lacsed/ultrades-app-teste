@@ -1,7 +1,7 @@
 @namespace UltraDESDraw.Components
 @inject SharedDataService SharedDataService
 
-<g tabindex="0" @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onkeyup="HandleKeyUp" @onmousemove="HandleMouseMove" @onfocusin="HandleGainFocus" @onfocusout="HandleLoseFocus">
+<g tabindex="0" @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onkeyup="HandleKeyUp" @onfocusin="HandleGainFocus" @onfocusout="HandleLoseFocus">
 @{
     @* if (SharedDataService.SelectedLink == Link)
     {
@@ -280,9 +280,7 @@
                 Vector2D directionMiddleToCenter = (positionArcCenter - positionTransitionMiddle).Normalized();
                 Vector2D directionMiddleToSide = (positionArcSide - positionTransitionMiddle).Normalized();
 
-                double angleBetweenDirections = Vector2D.SmallestAngleBetweenVectors(directionMiddleToCenter, directionMiddleToSide);
-
-                largeArcFlag = directionMiddleToCenter == directionMiddleToSide ? 1 : 0;
+                
                 sweepFlag = percentageTransitionDistanceToRadius >= 0 ? 0 : 1;
 
                 double angleNodeOffset = Vector2D.AngleBetween(_nodeRadius, _radiusArcLink, _radiusArcLink);
@@ -295,6 +293,20 @@
 
                 _positionArcStart = positionArcCenter + directionCenterToStartNode.Rotated(angleNodeOffset * directionRotation) * _radiusArcLink;
                 _positionArcEnd = positionArcCenter + directionCenterToEndNode.Rotated((angleNodeOffset + angleArrowOffset) * -directionRotation) * _radiusArcLink;
+
+                Vector2D directionCenterArcStart = (_positionArcStart - positionArcCenter).Normalized();
+                Vector2D directionCenterArcEnd = (_positionArcEnd - positionArcCenter).Normalized();
+                double arcAngle = directionCenterArcStart.UnsignedRotationAngle(directionCenterArcEnd);
+
+                Vector2D positionArcMiddle = _positionArcStart.Middle(_positionArcEnd);
+                Vector2D directionArcMiddleToCenter = (positionArcCenter - positionArcMiddle).Normalized();
+                Vector2D directionArcMiddleToSide = (positionArcSide - positionArcMiddle).Normalized();
+                largeArcFlag = arcAngle <= Math.PI ? 1 : 0;
+
+                if ((percentageTransitionDistanceToRadius >= 0 && arcAngle <= Math.PI) || (percentageTransitionDistanceToRadius <= 0 && arcAngle >= Math.PI))
+                    largeArcFlag = 1;
+                else
+                    largeArcFlag = 0;
 
                 _positionText = positionArcSide + directionPerpendicular * 20;
 
@@ -393,6 +405,7 @@
         }
         else if (e.Key == "Delete")
         {
+            Console.WriteLine("Está deletando a seta inicial");
             SharedDataService.Graph.graphLinks.Remove(Link);
             SharedDataService.Graph.UpdateAutomaton();
             SharedDataService.NotifyDataChanged();
@@ -415,14 +428,13 @@
     }
 
 
-    public async Task HandleMouseMove(MouseEventArgs e)
+    public void HandleMouseMove(Vector2D mousePositionSVG)
     {
         if (!_flagMouseIsDown || _isAuto || _isInitial)
             return;
-
         // Since the objective of this method is to alter the values of the Link, work will be done in the original coordinates, not SVG's.
 
-        Vector2D positionMouse = new Vector2D(e.OffsetX, e.OffsetY).FromSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+        Vector2D positionMouse = mousePositionSVG.FromSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
 
         Vector2D positionStartNode = Link.start.position;
         Vector2D positionEndNode = Link.end.position;
@@ -432,7 +444,7 @@
         if (distanceMouseToLine < 10)
         {
             Link.radiusPercentage = 0;
-            await InvokeAsync(StateHasChanged);
+            SharedDataService.NotifyDataChanged();
             return;
         }
 
@@ -459,7 +471,7 @@
 
         Link.radiusPercentage = valueSide * ratioModule;// * Math.Min(1, ratioModule);
 
-        await InvokeAsync(StateHasChanged);
+        SharedDataService.NotifyDataChanged();
     }
 
     private double FindRadius(Vector2D center, Vector2D point)

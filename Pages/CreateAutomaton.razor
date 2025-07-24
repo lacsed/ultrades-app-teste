@@ -64,6 +64,12 @@
         <button class="button is-success" @onclick="AutomatonFromCanvas">From Canvas</button>
         <button class="button is-success" @onclick="Create">Create Automaton</button>
         <button class="button is-danger" @onclick="OnCancel">Cancel</button>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="notification is-danger">
+                @errorMessage
+            </div>
+        }
     </div>
 </div>
 
@@ -74,6 +80,7 @@
     [Parameter]public Dictionary<string, AbstractEvent> Events { get; set; }
 
     private string name = "";
+    private string errorMessage = "";
     private string initial = "";
     private int transitionsNum = 1;
     private readonly string[,] transitions = new string[100, 3];
@@ -87,6 +94,14 @@
 
     private void Create()
     {
+        if (SharedDataService.automata.ContainsKey(name))
+        {
+            errorMessage = $"An automaton already exists with the name: \"{name}\".";
+            return;
+        }
+
+        errorMessage = "";
+
         var trans = Enumerable.Range(0, transitionsNum)
             .Select(i => (transitions[i, 0], transitions[i, 1], transitions[i, 2]))
             .Where(t => States.ContainsKey(t.Item1) && Events.ContainsKey(t.Item2) && States.ContainsKey(t.Item3))
@@ -102,6 +117,14 @@
 
     private void AutomatonFromCanvas()
     {
+        if (SharedDataService.automata.ContainsKey(name))
+        {
+            errorMessage = $"An automaton already exists with the name: \"{name}\".";
+            return;
+        }
+
+        errorMessage = "";
+
         SharedDataService.Graph._automaton.SetName(name);
         SharedDataService.automata.Add(name, SharedDataService.Graph);
         OnSuccess(SharedDataService.Graph._automaton.GetDFA());

@@ -100,16 +100,6 @@ namespace AutoAVL.Drawables
                 return;
             }
 
-            /* double interactDistance = 1000
-            if (nodesDistance < 1000)
-            {
-                Console.WriteLine(nodesDistance);
-                double force = (1 - phyD.attenuation) * phyD.repulsion / nodesDistance;
-
-                nodeB.displacement += force * normal;
-                this.displacement -= force * normal;
-            } */
-
             double force = (1 - phyD.attenuation) * phyD.repulsion / nodesDistance;
 
             nodeB.displacement += force * normal;

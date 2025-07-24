@@ -94,11 +94,20 @@ namespace AutoAVL.Drawables
 
             if (previousInitialLink != null)
             {
+                Console.WriteLine("Anterior inicial = " + previousInitialLink.name);
                 graphLinks.Remove(previousInitialLink);
             }
 
-            graphLinks.Add(newLink);
+            Console.WriteLine("links antes");
+            foreach (Link link in graphLinks)
+                Console.WriteLine("nome do link = " + link.name);
+            Console.WriteLine("links depois");
+            foreach (Link link in graphLinks)
+                Console.WriteLine("nome do link = " + link.name);
+            Console.WriteLine("Fim");
             _automaton.UpdateAutomaton(graphNodes, graphLinks);
+            Console.WriteLine("Número de transições depois de recriar = " + _automaton.Transitions().Count);
+            graphLinks.Add(newLink);
         }
 
         public void AddAutoLink(Link newLink)
@@ -205,6 +214,11 @@ namespace AutoAVL.Drawables
             string svgHeading = @"<?xml version=""1.0"" standalone=""no""?>" + Environment.NewLine + @"<!DOCTYPE svg PUBLIC ""-//W3C//DTD SVG 1.1//EN"" ""https://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"">" + Environment.NewLine;
 
             return svgDimensions + svgSettings + svgImage + "</svg>";
+        }
+
+        public void AlignCanvas()
+        {
+            svgCanvas.SetUpCanvas(GetCanvasLimits());
         }
 
         public string ToLatex()

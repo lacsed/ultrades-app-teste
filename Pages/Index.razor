@@ -17,7 +17,7 @@
         </div>
         <div class="" @onclick="Shuffle">
             <button class="button" @onclick="Shuffle" aria-haspopup="true" aria-controls="create">
-                <span>Shuffle <i class="fas" @onclick="Shuffle"></i></span>
+                <span>Auto Layout <i class="fas" @onclick="Shuffle"></i></span>
             </button>
         </div>
         <div class="dropdown is-hoverable is-hidden-mobile">
@@ -94,11 +94,16 @@
                 </div>
             </div>
         </div>
+        <div class="dropdown is-hoverable is-hidden-mobile">
+            <button class="button" @onclick="ev => page = Page.HelpPage" aria-haspopup="true" aria-controls="create">
+                <span>Help <i class="fas"></i></span>
+            </button>
+        </div>
     </div>
 </nav>
 
-<main class="grid-content" style="display: flex; flex-direction: row;">
-    <div class="section" style="width: 300px; height: 100%; background-color: whitesmoke">
+<main class="grid-content" style="display: flex; flex-direction: row; flex-grow: 1; width: 100%; height: 0px;">
+    <div class="section" style="width: 300px; height: 100%; background-color: whitesmoke; display: flex; flex-direction: column;">
         <p class="menu-label">States (<a class="content-button" @onclick="() => ShowStates = !ShowStates">@((ShowStates) ? "- Hide": "+ Show")</a>)</p>
         <ul class="menu-list">
             @if (ShowStates)
@@ -166,7 +171,7 @@
 
 
         <p class="menu-label">Automaton (<a class="content-button" @onclick="() => ShowAutomata = !ShowAutomata">@((ShowAutomata) ? "- Hide": "+ Show")</a>)</p>
-        <ul class="menu-list">
+        <ul class="menu-list" style="overflow: scroll;">
             @if (ShowAutomata)
             {
                 @foreach (var G in automata)
@@ -234,11 +239,14 @@
         </ul>
     </div>
 
-    <div class="container" style="flex: 1; height: 100%; margin: 0%; border: 0; padding: 0; display: flex; flex-direction: row;">
+    <div class="container-canvas" style="flex: 1; height: 100%; width: 100%; margin: 0%; border: 0; padding: 0; display: flex; flex-direction: row; flex-grow: 2;">
         @switch (page)
         {
             case Page.CreateState:
                 <Modal Title="Create a State" OnClose="@Clear"><CreateState OnSuccess="q => AddState(q)" OnCancel="@Clear"></CreateState></Modal>
+                break;
+            case Page.HelpPage:
+                <Modal Title="Help Information" OnClose="@Clear"><HelpPage OnSuccess="q => AddState(q)" OnCancel="@Clear"></HelpPage></Modal>
                 break;
             case Page.CreateEvent:
                 <Modal Title="Create an Event" OnClose="@Clear"><CreateEvent OnSuccess="e => AddEvent(e)" OnCancel="@Clear"></CreateEvent></Modal>
@@ -293,9 +301,9 @@
     </div>
 </main>
 
-<footer class="footer has-text-centered">
+<footer class="footer has-text-centered no-select">
     <div style="display: inline-block;">
-        <div style="float: left;"><p><strong>UltraDES</strong> by </p></div>
+        <div class="no-select" style="float: left;"><p><strong>UltraDES</strong> by </p></div>
         <div style="float: left;"><a href="https://lacsed.eng.ufmg.br"><img src="/UltraDES/img/logo_lacsed.png" alt="LACSED" width="90" height="40"></a></div>
         <div style="float: right;"><p> | <a href="https://www.ufmg.br">UFMG</a>.</p></div>
     </div>
@@ -311,6 +319,7 @@
         CreateAutomaton,
         ShowAutomaton,
         EditCanvas,
+        HelpPage,
         Interactive,
         SetMultipleInteractive,
         MultipleInteractive,
@@ -338,6 +347,7 @@
     private void Shuffle()
     {
         SharedDataService.Graph.Simulate();
+        SharedDataService.Graph.AlignCanvas();
         SharedDataService.NotifyDataChanged();
     }
 
@@ -405,6 +415,7 @@
         if (SharedDataService.automata.ContainsKey(nameAutomaton))
         {
             SharedDataService.Graph = SharedDataService.automata[nameAutomaton];
+            SharedDataService.Graph.AlignCanvas();
         }
         else
         {
@@ -413,6 +424,7 @@
             graph.Simulate();
             SharedDataService.Graph = graph;
             SharedDataService.automata.Add(nameAutomaton, graph);
+            SharedDataService.Graph.AlignCanvas();
         }
     }
 
@@ -509,6 +521,7 @@
     private void ClearCanvas()
     {
         SharedDataService.Graph = new AutoAVL.Drawables.Graph();
+        SharedDataService.NotifyDataChanged();
         StateHasChanged();
     }
 

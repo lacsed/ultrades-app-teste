@@ -274,9 +274,12 @@ namespace AutoAVL.Drawables
         {
             if (isAutoLink)
             {
+                double distanceNodeAutoCenter = drawingDir.autoLinkDistanceRatio * drawingDir.AutoRadius() + drawingDir.TotalRadius();
+                Vector2D positionAutoCenter = start.position + _directionAuxiliary * distanceNodeAutoCenter;
+
                 double radius = drawingDir.AutoRadius() + 2 * drawingDir.textDistance;
-                Vector2D topLeft = new Vector2D(_directionAuxiliary.x - radius, _directionAuxiliary.y + radius);
-                Vector2D bottomRight = new Vector2D(_directionAuxiliary.x + radius, _directionAuxiliary.y - radius);
+                Vector2D topLeft = new Vector2D(positionAutoCenter.x - radius, positionAutoCenter.y + radius);
+                Vector2D bottomRight = new Vector2D(positionAutoCenter.x + radius, positionAutoCenter.y - radius);
 
                 return new Box(topLeft, bottomRight);
             }
@@ -299,54 +302,64 @@ namespace AutoAVL.Drawables
         string GenerateArcTransitionSVG(SvgCanvas canvas, DrawingDir drawingDir)
         {
             string svgArc = "";
-
             Vector2D positionStartNode = canvas.ToSvgCoordinates(start.position);
             Vector2D positionEndNode = canvas.ToSvgCoordinates(end.position);
 
-            Vector2D transitionDirection = (positionEndNode - positionStartNode).Normalized();
-            Vector2D perpendicularDirection = transitionDirection.PerpendicularSVG();
+            Vector2D directionTransition = (positionEndNode - positionStartNode).Normalized();
+            Vector2D directionPerpendicular = directionTransition.PerpendicularSVG();
 
-            Vector2D middlePoint = positionStartNode.Middle(positionEndNode);
+            Vector2D positionTransitionMiddle = positionStartNode.Middle(positionEndNode);
+            Vector2D position_directionAuxiliary = canvas.ToSvgCoordinates(_directionAuxiliary);
 
-            double radiusTransition = (positionEndNode - positionStartNode).Length() / 2;
+            double distanceTransition = (positionEndNode - positionStartNode).Length();
 
-            Vector2D positionSide = middlePoint + perpendicularDirection * radiusPercentage * radiusTransition;
-            
-            Vector2D center = Vector2D.FindCenter(positionStartNode, positionEndNode, positionSide);
+            Vector2D positionArcSide = positionTransitionMiddle + directionPerpendicular * radiusPercentage * distanceTransition / 2;
+            Vector2D positionArcCenter = Vector2D.FindCenter(positionStartNode, positionArcSide, positionEndNode);
 
-            double arcRadius = (positionSide - center).Length();
+            double radiusArcLink = (positionStartNode - positionArcCenter).Length();
 
-            // Find the arrow's tip and base points by rotating the vector from the arc's center 
-            // by the angles formed by the node radius and the arrow length, respectively.
-            // Note: Since the rotation is counterclockwise, we must use negative angles.
-            double nodeRadiusAngle = Vector2D.AngleBetween(drawingDir.nodeRadius, arcRadius, arcRadius);
-            double arrowBaseAngle = Vector2D.AngleBetween(drawingDir.arrowLength, arcRadius, arcRadius);
+            Vector2D directionMiddleToCenter = (positionArcCenter - positionTransitionMiddle).Normalized();
+            Vector2D directionMiddleToSide = (positionArcSide - positionTransitionMiddle).Normalized();
 
-            Vector2D arrowTip = center + (positionEndNode - center).Rotated(-nodeRadiusAngle);
-            Vector2D arrowBase = center + (positionEndNode - center).Rotated(-(nodeRadiusAngle + arrowBaseAngle));
-            
-            Vector2D arcOrigin = center + (positionStartNode - center).Rotated(nodeRadiusAngle);
-            Vector2D arcDestination = arrowBase;
-            
-            Vector2D textPosition = positionSide + perpendicularDirection * 20;
-
-            Vector2D directionMiddleToCenter = (center - middlePoint).Normalized();
-            Vector2D directionMiddleToSide = (positionSide - middlePoint).Normalized();
-            
-            // Between two points exist four possible arcs in SVG.
-            // largeArcFlag determinnes if the arc will be the smallest or biggest between the points.
-            // sweepFlag determines if the arc will have a clockwise or counter-clockwise rotation.
-            int largeArcFlag = directionMiddleToCenter == directionMiddleToSide ? 1 : 0;
             int sweepFlag = radiusPercentage >= 0 ? 0 : 1;
-            
-            // All points need to be converted to the SVG canva's coordinate system.
-            /* arcOrigin = canvas.ToSvgCoordinates(arcOrigin);
-            arcDestination = canvas.ToSvgCoordinates(arcDestination);
-            arrowBase = arcDestination;
-            arrowTip = canvas.ToSvgCoordinates(arrowTip); */
+
+            double angleNodeOffset = Vector2D.AngleBetween(drawingDir.nodeRadius, radiusArcLink, radiusArcLink);
+            double angleArrowOffset = Vector2D.AngleBetween(drawingDir.arrowLength, radiusArcLink, radiusArcLink);
+
+            int directionRotation = sweepFlag == 1 ? 1 : -1;
+
+            Vector2D directionCenterToStartNode = (positionStartNode - positionArcCenter).Normalized();
+            Vector2D directionCenterToEndNode = (positionEndNode - positionArcCenter).Normalized();
+
+            Vector2D positionArcStart = positionArcCenter + directionCenterToStartNode.Rotated(angleNodeOffset * directionRotation) * radiusArcLink;
+            Vector2D positionArcEnd = positionArcCenter + directionCenterToEndNode.Rotated((angleNodeOffset + angleArrowOffset) * -directionRotation) * radiusArcLink;
+
+            Vector2D directionCenterArcStart = (positionArcStart - positionArcCenter).Normalized();
+            Vector2D directionCenterArcEnd = (positionArcEnd - positionArcCenter).Normalized();
+            double arcAngle = directionCenterArcStart.UnsignedRotationAngle(directionCenterArcEnd);
+
+
+            int largeArcFlag = 1;
+
+            if ((radiusPercentage >= 0 && arcAngle <= Math.PI) || (radiusPercentage <= 0 && arcAngle >= Math.PI))
+                largeArcFlag = 1;
+            else
+                largeArcFlag = 0;
+
+
+            Vector2D positionText = positionArcSide + directionPerpendicular * 20;
+
+            Vector2D positionArrowTip = positionArcCenter + directionCenterToEndNode.Rotated(angleNodeOffset * -directionRotation) * radiusArcLink;
+
+            Vector2D positionArrowBase = positionArcEnd;
+            Vector2D directionArrow = (positionArrowTip - positionArrowBase).Normalized();
+            Vector2D directionArrowPerpendicular = directionArrow.Perpendicular();
+
+            Vector2D positionRightWing = positionArrowBase + directionArrowPerpendicular * drawingDir.arrowWidth / 2;
+            Vector2D positionLeftWing = positionArrowBase - directionArrowPerpendicular * drawingDir.arrowWidth / 2;
             
             // Construct the arc's path attribute.
-            string arcPath = $"M {arcOrigin.x} {arcOrigin.y} A {arcRadius} {arcRadius} 0 {largeArcFlag} {sweepFlag} {arcDestination.x} {arcDestination.y}";
+            string arcPath = $"M {positionArcStart.x} {positionArcStart.y} A {radiusArcLink} {radiusArcLink} 0 {largeArcFlag} {sweepFlag} {positionArcEnd.x} {positionArcEnd.y}";
 
             // Line attributes.
             string stroke = $"stroke=\"{drawingDir.strokeColor}\"";
@@ -354,8 +367,8 @@ namespace AutoAVL.Drawables
             string fill = "fill=\"none\"";
 
             svgArc += $"<path d=\"{arcPath}\" {stroke} {strokeWidth} {fill} />{Environment.NewLine}";
-            svgArc += GenerateArrowheadPolygonSVG(arrowTip, arrowBase, drawingDir);
-            svgArc += GenerateSvgTextElement(textPosition, perpendicularDirection, canvas, name, drawingDir);
+            svgArc += GenerateArrowheadPolygonSVG(positionArrowTip, positionArrowBase, drawingDir);
+            svgArc += GenerateSvgTextElement(positionText, directionPerpendicular, canvas, name, drawingDir);
             
             
             return svgArc;
@@ -364,55 +377,35 @@ namespace AutoAVL.Drawables
         string GenerateArcTransitionLatex(DrawingDir drawingDir)
         {
             string latexArc = "";
-            Console.WriteLine("Desenhando a transição curva em Latex");
-
-            Console.WriteLine("Posição do node inicial = " + start.position);
-            Console.WriteLine("Posição do node final = " + end.position);
             
             Vector2D transitionDirection = (end.position - start.position).Normalized();
             Vector2D perpendicularDirection = transitionDirection.Perpendicular();
             Vector2D middlePoint = start.position.Middle(end.position);
-            Console.WriteLine("Direção da transição = " + transitionDirection);
-            Console.WriteLine("Direção perpendicular da transição = " + perpendicularDirection);
-            Console.WriteLine("Posição do meio da transição = " + middlePoint);
 
             double distanceTransition = (end.position - start.position).Length();
-            Console.WriteLine("Distância da transição = " + distanceTransition);
 
             Vector2D positionSide = middlePoint + perpendicularDirection * radiusPercentage * distanceTransition / 2;
-            Console.WriteLine("Posição do ponto lateral = " + positionSide);
             
             Vector2D center = Vector2D.FindCenter(start.position, end.position, positionSide);
-            Console.WriteLine("Posição do centro = " + center);
 
             double arcRadius = (positionSide - center).Length();
-            Console.WriteLine("Tamanho do raio do arco = " + arcRadius);
 
             // Find the arrow's tip and base points by rotating the vector from the arc's center 
             // by the angles formed by the node radius and the arrow length, respectively.
             // Note: Since the rotation is counterclockwise, we must use negative angles.
             double nodeRadiusAngle = Vector2D.AngleBetween(drawingDir.nodeRadius, arcRadius, arcRadius);
             double arrowBaseAngle = Vector2D.AngleBetween(drawingDir.arrowLength, arcRadius, arcRadius);
-            Console.WriteLine("Ângulo do raio do node = " + nodeRadiusAngle);
-            Console.WriteLine("Ângulo da base da seta = " + arrowBaseAngle);
 
             int factorAngleCorretion = radiusPercentage > 0 ? 1 : -1;
 
             Vector2D arrowTip = center + (end.position - center).Rotated(-nodeRadiusAngle * factorAngleCorretion);
             Vector2D arrowBase = center + (end.position - center).Rotated(-(nodeRadiusAngle + arrowBaseAngle) * factorAngleCorretion);
-            Console.WriteLine("Posição da ponta da seta = " + arrowTip);
-            Console.WriteLine("Posição da base da seta = " + arrowBase);
 
             Vector2D tempDirection = (start.position - center);
-            Console.WriteLine("Direção do centro da transição para o node inicial = " + tempDirection);
-            Console.WriteLine("Direção rotacionada para o início da transição = " + tempDirection.Rotated(nodeRadiusAngle * factorAngleCorretion));
             Vector2D arcOrigin = center + (start.position - center).Rotated(nodeRadiusAngle * factorAngleCorretion);
             Vector2D arcDestination = arrowBase;
-            Console.WriteLine("Posição da origem do arco = " + arcOrigin);
-            Console.WriteLine("Posição do destino do arco = " + arcDestination);
             
             Vector2D textPosition = positionSide + perpendicularDirection * drawingDir.textDistance;
-            Console.WriteLine("Posição do texto = " + textPosition);
 
             Vector2D directionMiddleToCenter = (center - middlePoint).Normalized();
             Vector2D directionMiddleToSide = (positionSide - middlePoint).Normalized();
@@ -425,18 +418,12 @@ namespace AutoAVL.Drawables
 
             Vector2D directionCenterToStart = (arcOrigin - center).Normalized();
             Vector2D directionCenterToEnd = (arcDestination - center).Normalized();
-            Console.WriteLine("Direção do centro ao início = " + directionCenterToStart);
-            Console.WriteLine("Direção do centro ao fim = " + directionCenterToEnd);
 
             double angleAutoLinkStart = (arcOrigin - center).UnsignedAngleDegrees();
             double angleAutoLinkEnd = (arcDestination - center).UnsignedAngleDegrees();
-            Console.WriteLine("Ângulo de início = " + angleAutoLinkStart);
-            Console.WriteLine("Ângulo de fim = " + angleAutoLinkEnd);
 
             double angleSmaller = Vector2D.SmallestAngleBetweenVectorsDegrees(directionCenterToStart, directionCenterToEnd);
             double angleBigger = 360 - angleSmaller;
-            Console.WriteLine("Menor ângulo = " + angleSmaller);
-            Console.WriteLine("Maio ângulo = " + angleBigger);
 
             double angleToInclude = largeArcFlag == 1 ? angleBigger : angleSmaller;
             int includeOperation = sweepFlag == 1 ? -1 : 1;
@@ -444,8 +431,6 @@ namespace AutoAVL.Drawables
             angleAutoLinkEnd = angleAutoLinkStart + includeOperation * angleToInclude;
             
             latexArc += @"\draw [black] (" + arcOrigin.x / 10 + "," + arcOrigin.y / 10 + ") arc (" + angleAutoLinkStart + ":" + angleAutoLinkEnd + ":" + arcRadius / 10 + ");" + Environment.NewLine;
-
-            Console.WriteLine("Linha final do arco = " + latexArc);
 
             latexArc += GenerateArrowheadPolygonLatex(arrowTip, arrowBase, drawingDir);
             latexArc += GenerateLatexTextElement(textPosition, perpendicularDirection, name, drawingDir);
@@ -722,18 +707,12 @@ namespace AutoAVL.Drawables
 
             Vector2D directionCenterToStart = (originPoint - positionAutoLinkCenter).Normalized();
             Vector2D directionCenterToEnd = (endPoint - positionAutoLinkCenter).Normalized();
-            Console.WriteLine("Direção do centro ao início = " + directionCenterToStart);
-            Console.WriteLine("Direção do centro ao fim = " + directionCenterToEnd);
 
             double angleAutoLinkStart = (originPoint - positionAutoLinkCenter).UnsignedAngleDegrees();
             double angleAutoLinkEnd = (endPoint - positionAutoLinkCenter).UnsignedAngleDegrees();
-            Console.WriteLine("Ângulo de início = " + angleAutoLinkStart);
-            Console.WriteLine("Ângulo de fim = " + angleAutoLinkEnd);
 
             double angleSmaller = Vector2D.SmallestAngleBetweenVectorsDegrees(directionCenterToStart, directionCenterToEnd);
             double angleBigger = 360 - angleSmaller;
-            Console.WriteLine("Menor ângulo = " + angleSmaller);
-            Console.WriteLine("Maio ângulo = " + angleBigger);
 
             double angleToInclude = largeArcFlag == 1 ? angleBigger : angleSmaller;
             int includeOperation = sweepFlag == 1 ? -1 : 1;
