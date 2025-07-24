@@ -1,11 +1,11 @@
 ﻿<!DOCTYPE html>
-<html>
+<html style="width: 100%; height: 100%; max-width: 100vw; max-height: 100vh;">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>UltraDES App</title>
-    <base href="https://lacsed.github.io/ultrades-app-teste/" />
+    <base href="/" />
 
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
     <link href="manifest.json" rel="manifest" />
@@ -28,13 +28,13 @@
     <script src="js/util.js"></script>
 </head>
 
-<body>
-    <app class="grid-container">
+<body style="height: 100%; width: 100%;">
+    <app class="grid-container" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
         <div class="pageloader is-active" style="background: #287ef2">
             <span class="title">Loading</span>
         </div>
     </app>
-
+    <script src="js/zoom.js"></script>
     <script src="_framework/blazor.webassembly.js" autostart="false"></script>
     <script>
         Blazor.start({

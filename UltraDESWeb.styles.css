@@ -88,6 +88,13 @@ li[b-th5f30lv43] {
 }/*# sourceMappingURL=EditPanel.razor.css.map */
 /* /Pages/Drawing/Edit/EditTempLink/EditTempLink.razor.rz.scp.css */
 /*# sourceMappingURL=EditTempLink.razor.css.map */
+/* /Pages/Index.razor.rz.scp.css */
+#side-panel[b-v8bn6b57qw] {
+  width: 300px;
+  height: 100%;
+  padding: 48px 24px;
+  box-sizing: border-box;
+}/*# sourceMappingURL=Index.razor.css.map */
 /* /Shared/MainLayout.razor.rz.scp.css */
 .page[b-1d4bwikjam] {
     position: relative;
