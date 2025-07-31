@@ -1,0 +1,27 @@
+@using global::UltraDES
+
+<div>
+    <p>@errorMessage</p>
+</div>
+
+@code {
+    [Parameter] public Action<AbstractState> OnSuccess { get; set; }
+    [Parameter] public Action OnCancel { get; set; }
+
+    [Parameter] public string errorMessage { get; set; }
+
+    private string name = "";
+    private bool opt = false;
+
+    private void Create()
+    {
+        string[] SubStates = name.Split(";"); 
+        foreach(var sub in SubStates)
+        {
+            var q = new State(sub, opt ? Marking.Marked : Marking.Unmarked);
+            OnSuccess(q);
+            StateHasChanged();
+        }
+    }
+
+}

@@ -123,6 +123,24 @@
             return;
         }
 
+        foreach (Link link in SharedDataService.Graph.graphLinks)
+        {
+            if (link.name == "" && !link.isInitialLink)
+            {
+                errorMessage = "One or more transitions have not been named";
+                return;
+            }
+        }
+
+        foreach (Node node in SharedDataService.Graph.graphNodes)
+        {
+            if (node.name == "")
+            {
+                errorMessage = "One or more states have not been named";
+                return;
+            }
+        }
+
         errorMessage = "";
 
         SharedDataService.Graph._automaton.SetName(name);

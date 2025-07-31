@@ -52,43 +52,72 @@ namespace AutoAVL
 
         public void UpdateAutomaton(List<Node> nodes, List<Link> links)
         {
-            List<State> states = new List<State>();
-            List<Event> events = new List<Event>();
-            List<Transition> transitions = new List<Transition>();
 
-            State initialState = new State("", Marking.Marked);
+            // Dicionário para armazenar States, usando o Alias como chave para busca eficiente
+            Dictionary<string, State> statesDict = new Dictionary<string, State>();
+            // Dicionário para armazenar Events, usando o Alias como chave para garantir unicidade
+            Dictionary<string, Event> eventsDict = new Dictionary<string, Event>();
 
+            State initialState = null; // O estado inicial do autômato
+
+            // --- Passo 1: Criar e Coletar Estados ---
             foreach (Node node in nodes)
             {
-                states.Add(new State(node.name, node.marked ? Marking.Marked : Marking.Unmarked));
-            }
-
-            foreach (Link link in links)
-            {
-                if (link.isInitialLink)
+                // Garante que o Estado seja criado e adicionado ao dicionário.
+                // Se um nó com o mesmo nome existir, ele será atualizado (se Alias for a chave).
+                // Se a classe State já tem Equals/GetHashCode por Alias, Dictionary.Add() lança erro se já existir.
+                // Uma abordagem mais robusta seria verificar antes de adicionar:
+                string stateAlias = node.name;
+                if (!statesDict.ContainsKey(stateAlias))
                 {
-                    initialState = states.Find(x => x.Alias == link.end.name);
-                } else
+                    statesDict.Add(stateAlias, new State(stateAlias, node.marked ? Marking.Marked : Marking.Unmarked));
+                }
+                else
                 {
-                    events.Add(new Event(link.name, Controllability.Controllable));
+                    
                 }
             }
 
+            // --- Passo 2: Coletar Eventos Únicos e Identificar o Estado Inicial ---
             foreach (Link link in links)
             {
                 if (link.isInitialLink)
-                    continue;
+                {
+                    statesDict.TryGetValue(link.end.name, out State foundInitialState);
+                    initialState = foundInitialState;
+                }
+                else
+                {
+                    string eventAlias = link.name;
+                    if (!eventsDict.ContainsKey(eventAlias))
+                    {
+                        eventsDict.Add(eventAlias, new Event(eventAlias, Controllability.Controllable));
+                    }
+                }
+            }
 
-                State origin = states.Find(x => x.Alias == link.start.name);
-                State destination = states.Find(x => x.Alias == link.end.name);
-                Event trigger = events.Find(x => x.Alias == link.name);
+
+            // --- Passo 3: Criar Transições (incluindo autoLinks) ---
+            List<Transition> transitions = new List<Transition>();
+            foreach (Link link in links)
+            {
+                if (link.isInitialLink)
+                {
+                    continue;
+                }
+
+                State origin = statesDict.GetValueOrDefault(link.start.name);
+                State destination = statesDict.GetValueOrDefault(link.end.name);
+                Event trigger = eventsDict.GetValueOrDefault(link.name);
+
                 transitions.Add(new Transition(origin, trigger, destination));
             }
-            Console.WriteLine("Número de transições antes de recriar = " + transitions.Count);
+
             try
             {
                 dfa = new DeterministicFiniteAutomaton(transitions, initialState, automatonName);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 ndfa = new NondeterministicFiniteAutomaton(transitions, initialState, automatonName);
             }

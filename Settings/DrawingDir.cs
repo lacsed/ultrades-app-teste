@@ -37,6 +37,8 @@ namespace AutoAVL.Settings
         public double clipRatio = 0.2f;
         public double initialLinkSize = 100.0f;
 
+        public double ticLength = 10.0;
+
         public double TotalRadius()
         {
             return nodeRadius + borderWidth;

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using AutoAVL.Settings;
@@ -55,6 +57,48 @@ namespace AutoAVL.Drawables
             id = Guid.NewGuid();
         }
 
+        public override bool Equals(object obj)
+        {
+            // 1. Verifica se o objeto é nulo.
+            if (obj == null) return false;
+
+            // 2. Verifica se o objeto é do tipo Node (ou pode ser convertido para Node).
+            // 'is' retorna true se o objeto for do tipo especificado ou de um tipo derivado.
+            if (obj is Node otherNode)
+            {
+                // 3. Compara pela propriedade que define a identidade única.
+                // O Guid 'id' é perfeito para isso.
+                return this.id.Equals(otherNode.id);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            // Retorna o hash code do Guid 'id'.
+            // É essencial que se dois objetos são considerados iguais (Equals retorna true),
+            // eles DEVEM retornar o mesmo hash code.
+            return this.id.GetHashCode();
+        }
+
+        // Opcional: Sobrescrever os operadores de igualdade (== e !=) para conveniência.
+        // Isso permite usar 'node1 == node2' diretamente no código.
+        public static bool operator ==(Node node1, Node node2)
+        {
+            // Lidar com referências nulas para ambos os lados
+            if (ReferenceEquals(node1, null))
+            {
+                return ReferenceEquals(node2, null);
+            }
+            // Chamar o método Equals sobrescrito
+            return node1.Equals(node2);
+        }
+
+        public static bool operator !=(Node node1, Node node2)
+        {
+            return !(node1 == node2);
+        }
+
         /// <summary>
         /// Assigns an initial position to each node in a circular layout.
         /// </summary>
@@ -71,6 +115,33 @@ namespace AutoAVL.Drawables
 
                 nodes[i].position = new Vector2D(x, y);
             }
+        }
+
+        public static void InitialPositioningUnidimentional(List<Node> nodes, Vector2D axis)
+        {
+            double distanceNodes = 40.0;
+
+            for (int i = 1; i < nodes.Count; i++)
+            {
+                nodes[i].position = distanceNodes * axis;
+            }
+        }
+
+        public static int SwitchNodes(List<Node> nodes, Vector2D axis)
+        {
+            for (int i = 1; i < nodes.Count - 1; i++)
+            {
+                double magnitudeCurrentMoveRight = nodes[i].displacement.Dot(axis);
+                double magnitudeNextMoveRight = nodes[i + 1].displacement.Dot(axis);
+
+                double switchNodes = magnitudeCurrentMoveRight - magnitudeNextMoveRight;
+
+                if (switchNodes > 0)
+                {
+                    
+                }
+            }
+            return 0;
         }
 
         public static void ResetDisplacement(List<Node> nodes)

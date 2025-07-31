@@ -8,7 +8,7 @@
     markedRadius = SharedDataService.Graph.drawingDir.markedRatio;
 }
 @(positionSVG = Node.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin()))
-<circle @ondblclick="HandleDBClick" @ondblclick:stopPropagation @onkeyup="HandleKeyUp" 
+<circle @ondblclick="HandleDBClick" @ondblclick:stopPropagation @onkeyup="HandleKeyUp"
         @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmouseenter="HandleMouseEnter" @onmouseleave="HandleMouseLeave"
         cx="@positionSVG.x" cy="@positionSVG.y" r="@radius"
         pointer-events="all" tabindex="0" style="outline: none;" 

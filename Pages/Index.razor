@@ -17,7 +17,7 @@
         </div>
         <div class="" @onclick="Shuffle">
             <button class="button" @onclick="Shuffle" aria-haspopup="true" aria-controls="create">
-                <span>Auto Layout <i class="fas" @onclick="Shuffle"></i></span>
+                <span>Auto Layout <i class="fas"></i></span>
             </button>
         </div>
         <div class="dropdown is-hoverable is-hidden-mobile">
@@ -168,8 +168,6 @@
             }
 
         </ul>
-
-
         <p class="menu-label">Automaton (<a class="content-button" @onclick="() => ShowAutomata = !ShowAutomata">@((ShowAutomata) ? "- Hide": "+ Show")</a>)</p>
         <ul class="menu-list" style="overflow: scroll;">
             @if (ShowAutomata)
@@ -182,7 +180,6 @@
                             <div aria-haspopup="true" aria-controls="@(G.Key)" style="width: 100%">
                                 <div class="level is-mobile">
                                     <div class="level-left" title="@(G.Key)"><span>Aut. @(G.Key.MaxLength(20))</span></div>
-                                    <div class="level-right"><span><i class="fas fa-angle-down"></i></span></div>
                                 </div>
                             </div>
 
@@ -244,6 +241,9 @@
         {
             case Page.CreateState:
                 <Modal Title="Create a State" OnClose="@Clear"><CreateState OnSuccess="q => AddState(q)" OnCancel="@Clear"></CreateState></Modal>
+                break;
+            case Page.ErrorMessage:
+                <Modal Title="Error Message" OnClose="@Clear"><ErrorMessage errorMessage="@errorMessage" OnCancel="@Clear"></ErrorMessage></Modal>
                 break;
             case Page.HelpPage:
                 <Modal Title="Help Information" OnClose="@Clear"><HelpPage OnSuccess="q => AddState(q)" OnCancel="@Clear"></HelpPage></Modal>
@@ -326,6 +326,7 @@
         VerifyOpacityAutomaton,
         AutomatonSummary,
         CreateSupervisor,
+        ErrorMessage,
         BinaryOperations,
         UnaryOperations,
         ExportWmod
@@ -343,18 +344,46 @@
     private Dictionary<string,List<string>> ListStateMultiple = new();
     private List<string> InteractiveAutomatons = new();
     private int colsNum=2;
+    private string errorMessage = "";
+
+    protected override void OnInitialized()
+    {
+        SharedDataService.OnChange += StateHasChanged;
+    }
+
+    protected void Dispose()
+    {
+        SharedDataService.OnChange -= StateHasChanged;
+    }
 
     private void Shuffle()
     {
-        SharedDataService.Graph.Simulate();
-        SharedDataService.Graph.AlignCanvas();
-        SharedDataService.NotifyDataChanged();
+        try
+        {
+            SharedDataService.Graph.Simulate();
+            SharedDataService.Graph.AlignCanvas();
+            SharedDataService.NotifyDataChanged();
+        }
+        catch (InvalidOperationException ex)
+        {
+            errorMessage = ex.Message;
+            page = Page.ErrorMessage;
+        }
+        catch (Exception ex)
+        {
+
+        }
     }
 
     private void Clear()
     {
         page = Page.Empty;
         StateHasChanged();
+    }
+
+    private string CanvasSVG()
+    {
+        return SharedDataService.Graph.ToSvg();
     }
 
     private void AddState(AbstractState q)
@@ -433,7 +462,7 @@
         page = Page.Empty;
         StateHasChanged();
         page = Page.ShowAutomaton;
-        automaton = G;
+        automaton = SharedDataService.Graph._automaton.GetDFA();
         StateHasChanged();
     }
 
@@ -443,7 +472,7 @@
         page = Page.Empty;
         StateHasChanged();
         page = Page.Interactive;
-        automaton = G;
+        automaton = SharedDataService.Graph._automaton.GetDFA();
         StateHasChanged();
     }
 

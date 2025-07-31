@@ -1,7 +1,7 @@
 @namespace UltraDESDraw.Components
 @inject SharedDataService SharedDataService
 
-<g tabindex="0" @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onkeyup="HandleKeyUp" @onfocusin="HandleGainFocus" @onfocusout="HandleLoseFocus">
+<g tabindex="0" @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onkeyup="HandleKeyUp" @onfocusin="HandleGainFocus" @onfocusout="HandleLoseFocus" @ondblclick="HandleDoubleClick" @ondblclick:stopPropagation>
 @{
     @* if (SharedDataService.SelectedLink == Link)
     {
@@ -175,6 +175,7 @@
         _arrowLength = SharedDataService.Graph.drawingDir.arrowLength;
         _angleAutoLinkStart = Vector2D.AngleBetween(_nodeRadius, _distanceNodeAutoCenter, _radiusAutoLink);
         _angleAutoArrowCover = Vector2D.AngleBetween(_arrowLength, _radiusAutoLink, _radiusAutoLink);
+        isControllable = Link.isControllable;
 
         if (Link.isAutoLink)
         {
@@ -222,7 +223,7 @@
             Vector2D positionArrowBase = positionAutoLinkCenter - directionAutoLinkCenter.Rotated(_angleAutoLinkStart + _angleAutoArrowCover) * _radiusAutoLink;
 
             Vector2D directionArrow = (positionArrowTip - positionArrowBase).Normalized();
-            Vector2D directionArrowPerpendicular = directionArrow.Perpendicular();
+            Vector2D directionArrowPerpendicular = directionArrow.PerpendicularSVG();
             
             // The start of the arc is in the opposite of the arrow, so the angle is negative compared to the angle used previously.
             _positionArcStart = positionAutoLinkCenter - directionAutoLinkCenter.Rotated(-_angleAutoLinkStart) * _radiusAutoLink; 
@@ -236,19 +237,20 @@
         }
         else if (_isInitial)
         {
-            // In the case of an initial link, _directionAuxiliary represents where the link starts.
-            Vector2D positionStartPoint = Link._directionAuxiliary.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
-            Vector2D positionEndNode = Link.end.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
+            Vector2D positionInitialNode = Link.end.position.ToSvgCoordinates(SharedDataService.Graph.svgCanvas.SVGOrigin());
 
-            Vector2D directionTransition = (positionEndNode - positionStartPoint).Normalized();
-            Vector2D directionPerpendicular = directionTransition.Perpendicular();
+            Vector2D directionTransition = - Link._directionAuxiliary.ToSvgDirection();
+            Vector2D directionPerpendicular = directionTransition.PerpendicularSVG();
 
-            _positionArrowTip = positionEndNode - directionTransition * _nodeRadius;
-            _positionRightWing = _positionLineEnd + directionPerpendicular * _arrowWidth / 2;
-            _positionLeftWing = _positionLineEnd - directionPerpendicular * _arrowWidth / 2;
+            double radiusNode = _nodeRadius;
+            double lengthTransition = Link.radiusPercentage;
+
+            _positionArrowTip = positionInitialNode - directionTransition * radiusNode;
+            _positionRightWing = _positionArrowTip - directionTransition * _arrowLength + directionPerpendicular * _arrowWidth / 2;
+            _positionLeftWing = _positionArrowTip - directionTransition * _arrowLength - directionPerpendicular * _arrowWidth / 2;
 
             _positionLineEnd = _positionArrowTip - directionTransition * _arrowLength;
-            _positionLineStart = positionStartPoint;
+            _positionLineStart = _positionLineEnd - directionTransition * lengthTransition;
         }
         else
         {
@@ -277,10 +279,6 @@
 
                 _radiusArcLink = (positionStartNode - positionArcCenter).Length();
 
-                Vector2D directionMiddleToCenter = (positionArcCenter - positionTransitionMiddle).Normalized();
-                Vector2D directionMiddleToSide = (positionArcSide - positionTransitionMiddle).Normalized();
-
-                
                 sweepFlag = percentageTransitionDistanceToRadius >= 0 ? 0 : 1;
 
                 double angleNodeOffset = Vector2D.AngleBetween(_nodeRadius, _radiusArcLink, _radiusArcLink);
@@ -335,7 +333,7 @@
             }
         }
 
-        if (isControllable)
+        if (Link.isControllable)
         {
             double tickLength = 10;
 
@@ -373,6 +371,14 @@
         _flagMouseIsDown = false;
     }
 
+    private async Task HandleDoubleClick()
+    {
+        isControllable = !isControllable;
+        Link.isControllable = !Link.isControllable;
+        SharedDataService.UpdateAutomaton();
+        SharedDataService.NotifyDataChanged();
+    }
+
     public void HandleKeyUp(KeyboardEventArgs e)
     {
         if (_isInitial) return;
@@ -380,6 +386,7 @@
         if (e.Key == "Enter" && e.ShiftKey)
         {
             isControllable = !isControllable;
+            Link.isControllable = !Link.isControllable;
             SharedDataService.UpdateAutomaton(); // Se necessário persistir
             SharedDataService.NotifyDataChanged(); // Redesenha
             return;
@@ -405,7 +412,6 @@
         }
         else if (e.Key == "Delete")
         {
-            Console.WriteLine("Está deletando a seta inicial");
             SharedDataService.Graph.graphLinks.Remove(Link);
             SharedDataService.Graph.UpdateAutomaton();
             SharedDataService.NotifyDataChanged();

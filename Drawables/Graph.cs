@@ -77,42 +77,32 @@ namespace AutoAVL.Drawables
 
         public void AddLink(Link newLink)
         {
-            AbstractState initialState = _automaton.States().Find(x => x.ToString() == newLink.start.name);
-            AbstractState finalState = _automaton.States().Find(x => x.ToString() == newLink.end.name);
-
-            Event linkEvent = new Event("", Controllability.Controllable);
-
-            Transition linkTransition = new Transition(initialState, linkEvent, finalState);
-
             graphLinks.Add(newLink);
             _automaton.UpdateAutomaton(graphNodes, graphLinks);
         }
 
         public void AddInitialLink(Link newLink)
         {
-            Link previousInitialLink = graphLinks.Find(x => x.isInitialLink);
+            if (!newLink.isInitialLink)
+            {
+                return;
+            }
+
+            Link previousInitialLink = graphLinks.FirstOrDefault(link => link.isInitialLink);
 
             if (previousInitialLink != null)
             {
-                Console.WriteLine("Anterior inicial = " + previousInitialLink.name);
                 graphLinks.Remove(previousInitialLink);
             }
 
-            Console.WriteLine("links antes");
-            foreach (Link link in graphLinks)
-                Console.WriteLine("nome do link = " + link.name);
-            Console.WriteLine("links depois");
-            foreach (Link link in graphLinks)
-                Console.WriteLine("nome do link = " + link.name);
-            Console.WriteLine("Fim");
-            _automaton.UpdateAutomaton(graphNodes, graphLinks);
-            Console.WriteLine("Número de transições depois de recriar = " + _automaton.Transitions().Count);
             graphLinks.Add(newLink);
+
+            _automaton.UpdateAutomaton(graphNodes, graphLinks);
         }
 
         public void AddAutoLink(Link newLink)
         {
-            Link existingAutoLink = graphLinks.Find(x => x.isAutoLink == true && x.start == newLink.start);
+            Link existingAutoLink = graphLinks.Find(x => x.isAutoLink && x.start == newLink.start);
 
             if (existingAutoLink != null)
             {
@@ -133,6 +123,11 @@ namespace AutoAVL.Drawables
 
         public void Simulate()
         {
+            if (!this.AreAllNodesConnected())
+            {
+                throw new InvalidOperationException("Error: All the nodes must be connected in order to perform an auto layout");
+            }
+
             if (firstSimulation)
             {
                 Node.InitialPositioning(graphNodes);
@@ -166,6 +161,86 @@ namespace AutoAVL.Drawables
 
             Link.SetUp(graphLinks, drawingDir);
             AlignInitialTransition();
+            Link inicial = graphLinks.Find(link => link.isInitialLink);
+        }
+
+        public void SimulateOnOneAxis()
+        {
+            if (!this.AreAllNodesConnected())
+            {
+                throw new InvalidOperationException("Error: All the nodes must be connected in order to perform an auto layout");
+            }
+
+            Node initialNode = graphLinks.Find(x => x.isInitialLink).start;
+
+            List<Node> listSimulationNodes = [.. graphNodes];
+            List<Link> listSimulationLinks = [.. graphLinks];
+
+            int indexInitialNode = listSimulationNodes.FindIndex(x => x == initialNode);
+
+            if (indexInitialNode != 0)
+            {
+                Node nodeInPosition = listSimulationNodes[0];
+
+                listSimulationNodes[0] = initialNode;
+                listSimulationNodes[indexInitialNode] = nodeInPosition;
+            }
+
+            Node.InitialPositioningUnidimentional(listSimulationNodes, new Vector2D(1, 0));
+
+            int numberSwitchedNodes;
+
+            do
+            {
+                Node.ResetDisplacement(listSimulationNodes);    
+                Node.InteractNodes(listSimulationNodes, phyD);
+                Link.PullLinks(listSimulationLinks, phyD);
+
+                numberSwitchedNodes = Node.SwitchNodes(listSimulationNodes, new Vector2D(1,0));
+            } while (numberSwitchedNodes > 0);
+            
+        }
+
+        public bool AreAllNodesConnected()
+        {
+            if (graphNodes == null || graphNodes.Count == 0)
+            {
+                return true;
+            }
+
+            HashSet<Node> visitedNodes = new HashSet<Node>();
+
+            Node startNode = graphNodes[0];
+
+            Queue<Node> nodeQueue = new Queue<Node>();
+            nodeQueue.Enqueue(startNode);
+            visitedNodes.Add(startNode);
+
+            while (nodeQueue.Count > 0)
+            {
+                Node currentNode = nodeQueue.Dequeue();
+
+                foreach (Link link in graphLinks)
+                {
+                    Node neighbourNode = null;
+                    if (link.start == currentNode)
+                    {
+                        neighbourNode = link.end;
+                    }
+                    else if (link.end == currentNode)
+                    {
+                        neighbourNode = link.start;
+                    }
+
+                    if (neighbourNode != null && !visitedNodes.Contains(neighbourNode))
+                    {
+                        visitedNodes.Add(neighbourNode);
+                        nodeQueue.Enqueue(neighbourNode);
+                    }
+                }
+            }
+
+            return visitedNodes.Count == graphNodes.Count;
         }
 
         public void Shuffle()
@@ -186,11 +261,12 @@ namespace AutoAVL.Drawables
         public void AlignInitialTransition()
         {
             Link initialLink = graphLinks.Find(x => x.isInitialLink);
-            Vector2D direction = initialLink.start.position - initialLink._directionAuxiliary;
+            Vector2D direction = initialLink._directionAuxiliary;
             Vector2D positiveX = new Vector2D(1,0);
-            double angle = direction.UnsignedAngle();
+            double angle = (-direction).UnsignedAngle();
+            initialLink._directionAuxiliary.Rotate(angle);
             
-            foreach(Node node in graphNodes)
+            foreach (Node node in graphNodes)
             {
                 node.position.Rotate(-angle);
             }
@@ -204,6 +280,11 @@ namespace AutoAVL.Drawables
 
             string svgImage = "";
 
+            Box limitesCanvas = this.GetCanvasLimits();
+            Console.WriteLine("Ponto superior esquerdo = " + limitesCanvas.GetTopLeft());
+            Console.WriteLine("Ponto inferior direito = " + limitesCanvas.GetBottomRight());
+            Console.WriteLine("Largura da canvas = " + limitesCanvas.Width());
+            Console.WriteLine("Altura do canvas = " + limitesCanvas.Height());
             svgCanvas.SetUpCanvas(this.GetCanvasLimits());
 
             foreach (Drawable drawable in graphNodes.Concat<Drawable>(graphLinks).ToList())
@@ -218,6 +299,7 @@ namespace AutoAVL.Drawables
 
         public void AlignCanvas()
         {
+            Box limitBox = GetCanvasLimits();
             svgCanvas.SetUpCanvas(GetCanvasLimits());
         }
 
@@ -238,11 +320,27 @@ namespace AutoAVL.Drawables
 
         public Box GetCanvasLimits()
         {
-            Box canvasBox = new Box();
+            // Crie uma lista de todos os objetos desenháveis
+            List<Drawable> allDrawables = graphNodes.Concat<Drawable>(graphLinks).ToList();
 
-            foreach (Drawable drawable in graphNodes.Concat<Drawable>(graphLinks).ToList())
+            // Se não houver objetos, retorne uma caixa padrão (ou lance uma exceção, dependendo do seu caso)
+            if (!allDrawables.Any())
+            {
+                // Aqui você pode retornar uma caixa vazia, uma caixa padrão pequena ou null,
+                // dependendo do que faz mais sentido para o seu aplicativo.
+                // Por exemplo, uma caixa com ponto superior esquerdo e inferior direito iguais.
+                return new Box(new Vector2D(0, 0), new Vector2D(0, 0));
+            }
+
+            // Inicialize canvasBox com a caixa do PRIMEIRO objeto
+            Box canvasBox = allDrawables.First().GetBox(drawingDir);
+            Console.WriteLine("Ponto superior esquerdo inicial do canvasBox = " + canvasBox.GetTopLeft());
+
+            // Itere sobre os objetos restantes (a partir do segundo)
+            foreach (Drawable drawable in allDrawables.Skip(1)) // Pula o primeiro elemento que já foi usado
             {
                 canvasBox = Box.EncompassingBox(canvasBox, drawable.GetBox(drawingDir));
+                Console.WriteLine("Ponto superior esquerdo do canvasBox = " + canvasBox.GetTopLeft());
             }
 
             return canvasBox;

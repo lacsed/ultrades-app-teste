@@ -24,6 +24,7 @@ namespace AutoAVL.Drawables
 
         public bool isAutoLink;
         public bool isInitialLink;
+        public bool isControllable = false;
 
 
         /// <summary>
@@ -43,7 +44,7 @@ namespace AutoAVL.Drawables
             guid = Guid.NewGuid();
             isAutoLink = (origin == destination);
             isInitialLink = false;
-            _directionAuxiliary = origin.position.Middle(destination.position);
+            _directionAuxiliary = (destination.position - origin.position).Normalized();
         }
         
         public Link(Node initialState)
@@ -58,7 +59,7 @@ namespace AutoAVL.Drawables
             _directionAuxiliary = new Vector2D();
         }
 
-        public Link(Node initialState, Vector2D auxP, bool autoLink)
+        public Link(Node initialState, Vector2D directionAuxiliary, bool autoLink)
         {
             start = initialState;
             end = initialState;
@@ -66,8 +67,47 @@ namespace AutoAVL.Drawables
             nameOffset = new Vector2D();
             guid = Guid.NewGuid();
             isAutoLink = autoLink;
-            isInitialLink = autoLink ? false : true;
-            _directionAuxiliary = auxP;
+            isInitialLink = !autoLink;
+            _directionAuxiliary = directionAuxiliary;
+        }
+
+        public override bool Equals(object obj)
+        {
+            // 1. Verificar se o objeto é nulo
+            if (obj == null) return false;
+
+            // 2. Verificar se o objeto é do mesmo tipo
+            // (ou se pode ser convertido para Link)
+            if (obj is Link otherLink)
+            {
+                // 3. Comparar pela propriedade que define a identidade única
+                // Neste caso, o GUID é perfeito.
+                return this.guid.Equals(otherLink.guid);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            // Retorna o hash code do GUID.
+            // Se dois objetos são iguais (Equals retorna true),
+            // eles DEVEM ter o mesmo hash code.
+            return this.guid.GetHashCode();
+        }
+
+        // Opcional: Sobrescrever o operador == para conveniência
+        public static bool operator ==(Link link1, Link link2)
+        {
+            if (ReferenceEquals(link1, null))
+            {
+                return ReferenceEquals(link2, null);
+            }
+            return link1.Equals(link2);
+        }
+
+        public static bool operator !=(Link link1, Link link2)
+        {
+            return !(link1 == link2);
         }
 
         public static void PullLinks(List<Link> links, PhyD phyD)
@@ -139,12 +179,12 @@ namespace AutoAVL.Drawables
 
                     link.radiusPercentage = drawingDir.linkRatio;
                     opLink.radiusPercentage = drawingDir.linkRatio;
-                } 
+                }
                 else
                 {
                     Vector2D middle = link.start.position.Middle(link.end.position);
 
-                    link._directionAuxiliary = middle;
+                    link._directionAuxiliary = (link.end.position - link.start.position).Normalized();
                 }
             }
 
@@ -152,51 +192,94 @@ namespace AutoAVL.Drawables
 
             foreach (Link link in links.Where(link => link.isAutoLink))
             {
-                List<Link> adjacentLinks = links.Where(adjacentLink => (adjacentLink.start == link.start || adjacentLink.end == link.end) && adjacentLink != link).ToList();
+                List<Link> adjacentLinks = links.Where(adjacentLink => (adjacentLink.start == link.start || adjacentLink.end == link.end) && adjacentLink != link && !adjacentLink.isInitialLink).ToList();
 
-                Vector2D linkDirection = AcomodateAutoInitialLink(link.start.position, adjacentLinks);
+                Vector2D linkDirection = AcomodateAutoInitialLink(link.start, adjacentLinks, drawingDir);
+
                 link._directionAuxiliary = linkDirection;
             }
-            
+
             Link initialLink = links.Find(x => x.isInitialLink);
             List<Link> iAdjacentLinks = links.Where(adjacentLink => (adjacentLink.start == initialLink.start || adjacentLink.end == initialLink.end) && adjacentLink != initialLink).ToList();
-            Vector2D initialLinkDirection = AcomodateAutoInitialLink(initialLink.start.position, iAdjacentLinks);
-            initialLink._directionAuxiliary = initialLink.start.position + initialLinkDirection * (drawingDir.initialLinkSize + drawingDir.TotalRadius());
+            Vector2D initialLinkDirection = AcomodateAutoInitialLink(initialLink.start, iAdjacentLinks, drawingDir);
+            initialLink._directionAuxiliary = initialLinkDirection;
+            initialLink.radiusPercentage = drawingDir.TotalRadius();
         }
         
-        public static Vector2D AcomodateAutoInitialLink(Vector2D nodePos, List<Link> adjacentLinks)
+        public static Vector2D AcomodateAutoInitialLink(Node currentNode, List<Link> adjacentLinks, DrawingDir drawingDir)
         {
             List<Vector2D> adjacentDirections = new List<Vector2D>();
 
-            foreach(Link adjacentLink in adjacentLinks)
+            Vector2D directionAdjacentAutoLinkStart = new Vector2D();
+            Vector2D directionAdjacentAutoLinkEnd = new Vector2D();
+
+            foreach (Link adjacentLink in adjacentLinks)
             {
-                if (adjacentLink.isInitialLink || adjacentLink.radiusPercentage == 0)
-                    adjacentDirections.Add(adjacentLink._directionAuxiliary);
+                if (adjacentLink.isAutoLink)
+                {
+                    double radiusArcLink = drawingDir.AutoRadius();
+                    double autoRatio = drawingDir.autoLinkDistanceRatio;
+                    double nodeRadius = drawingDir.TotalRadius();
+                    double distanceNodeAutoCenter = autoRatio * radiusArcLink + nodeRadius;
+                    double angleAutoLinkStart = Vector2D.AngleBetween(nodeRadius, distanceNodeAutoCenter, radiusArcLink);
+
+                    Vector2D positionNode = adjacentLink.start.position;
+                    Vector2D directionAutoLinkCenter = adjacentLink._directionAuxiliary;
+                    Vector2D positionAutoLinkCenter = positionNode + directionAutoLinkCenter * distanceNodeAutoCenter;
+
+                    Vector2D positionTouchStart = positionAutoLinkCenter - directionAutoLinkCenter.Rotated(-angleAutoLinkStart) * radiusArcLink;
+                    Vector2D positionTouchEnd = positionAutoLinkCenter - directionAutoLinkCenter.Rotated(angleAutoLinkStart) * radiusArcLink; ;
+
+                    directionAdjacentAutoLinkStart = (positionTouchStart - positionNode).Normalized();
+                    directionAdjacentAutoLinkEnd = (positionTouchStart - positionNode).Normalized();
+
+                    adjacentDirections.Add(directionAdjacentAutoLinkStart);
+                    adjacentDirections.Add(directionAdjacentAutoLinkEnd);
+                }
+                else if (adjacentLink.radiusPercentage == 0)
+                {
+                    Vector2D positionMiddle = adjacentLink.start.position.Middle(adjacentLink.end.position);
+                    Vector2D directionTransition = (positionMiddle - currentNode.position).Normalized();
+                    adjacentDirections.Add(directionTransition);
+                }
                 else
                 {
                     Vector2D positionStartNode = adjacentLink.start.position;
                     Vector2D positionEndNode = adjacentLink.end.position;
-                    Vector2D positionTransitionMiddle = positionStartNode.Middle(positionEndNode);
 
                     Vector2D directionTransition = (positionEndNode - positionStartNode).Normalized();
                     Vector2D directionPerpendicular = directionTransition.Perpendicular();
 
-                    double distanceTransition = (positionEndNode - positionStartNode).Length();
-                    double ratioTransitionBumpToWidth = adjacentLink.radiusPercentage;
+                    Vector2D positionTransitionMiddle = positionStartNode.Middle(positionEndNode);
 
-                    Vector2D positionArcSide = positionTransitionMiddle + directionPerpendicular * distanceTransition * ratioTransitionBumpToWidth;
+                    double distanceTransition = (positionEndNode - positionStartNode).Length();
+                    double radiusPercentage = adjacentLink.radiusPercentage;
+
+                    Vector2D positionArcSide = positionTransitionMiddle + directionPerpendicular * radiusPercentage * distanceTransition / 2;
                     Vector2D positionArcCenter = Vector2D.FindCenter(positionStartNode, positionArcSide, positionEndNode);
 
-                    double radiusArc = (positionEndNode - positionArcCenter).Length();
-                    double distanceTransitionCenterToMiddle = (positionArcCenter - positionTransitionMiddle).Length();
+                    double radiusArcLink = (positionStartNode - positionArcCenter).Length();
+                    int directionRotation = radiusPercentage < 0 ? 1 : -1;
+                    double angleNodeOffset = Vector2D.AngleBetween(drawingDir.TotalRadius(), radiusArcLink, radiusArcLink);
 
-                    double distanceTransitionCenterToTangentialsIntersection = radiusArc * radiusArc / distanceTransitionCenterToMiddle;
+                    Vector2D directionCenterToStartNode = (positionStartNode - positionArcCenter).Normalized();
+                    Vector2D directionCenterToEndNode = (positionEndNode - positionArcCenter).Normalized();
 
-                    Vector2D positionTangentialsIntersection = positionArcCenter + directionPerpendicular * distanceTransitionCenterToTangentialsIntersection;
+                    Vector2D positionTouchStart = positionArcCenter + directionCenterToStartNode.Rotated(angleNodeOffset * directionRotation) * radiusArcLink;
+                    Vector2D positionTouchEnd = positionArcCenter + directionCenterToEndNode.Rotated(angleNodeOffset * -directionRotation) * radiusArcLink;
 
-                    Vector2D directionTangentialsIntersection = (positionTangentialsIntersection - nodePos).Normalized();
+                    Vector2D adjacentDirection = new Vector2D();
 
-                    adjacentDirections.Add(directionTangentialsIntersection);
+                    if (currentNode == adjacentLink.start)
+                    {
+                        adjacentDirection = (positionTouchStart - positionStartNode).Normalized();
+                    }
+                    else
+                    {
+                        adjacentDirection = (positionTouchEnd - positionEndNode).Normalized();
+                    }
+
+                    adjacentDirections.Add(adjacentDirection);
                 }
             }
 
@@ -210,6 +293,9 @@ namespace AutoAVL.Drawables
             {
                 Vector2D currentVector = adjacentDirections[i];
                 Vector2D nextVector = adjacentDirections[(i + 1) % adjacentDirections.Count];
+
+                if (currentVector == directionAdjacentAutoLinkEnd && nextVector == directionAdjacentAutoLinkStart)
+                    continue;
 
                 double angle = currentVector.UnsignedRotationAngle(nextVector);
 
@@ -239,7 +325,7 @@ namespace AutoAVL.Drawables
                 if (radiusPercentage == 0)
                 {
                     return this.GenerateStraightTransitionSVG(canvas, drawingDir);
-                } 
+                }
                 else
                 {
                     return this.GenerateArcTransitionSVG(canvas, drawingDir); ;
@@ -285,15 +371,30 @@ namespace AutoAVL.Drawables
             }
             else if (isInitialLink)
             {
-                return Box.EncompassingBox(_directionAuxiliary, start.position);
+                Vector2D positionTransitionEnd = end.position + _directionAuxiliary * drawingDir.TotalRadius();
+                Vector2D positionTransitionStart = positionTransitionEnd + _directionAuxiliary * radiusPercentage;
+
+                Vector2D directionTransition = (positionTransitionEnd - positionTransitionStart).Normalized();
+                Vector2D directionPerpendicular = directionTransition.Perpendicular();
+
+                double arrowWidth = drawingDir.arrowWidth;
+
+                Vector2D positionTopLeft = positionTransitionStart - directionPerpendicular * arrowWidth / 1.5;
+                Vector2D positionBottomRight = positionTransitionEnd + directionPerpendicular * arrowWidth / 1.5;
+
+                return Box.EncompassingBox(positionTopLeft, positionBottomRight);
             }
             else
             {
+                if (radiusPercentage == 0)
+                {
+
+                }
                 Vector2D perpendicular = (end.position - start.position).Perpendicular();
                 Vector2D middle = start.position.Middle(end.position);
 
                 double radiusTransition = (end.position - start.position).Length() / 2;
-                Vector2D positionSide = middle + perpendicular * radiusPercentage * radiusTransition;
+                Vector2D positionSide = middle + perpendicular * (radiusPercentage * radiusTransition + 40);
 
                 return Box.EncompassingBox(start.position, positionSide, end.position);
             }
@@ -367,6 +468,17 @@ namespace AutoAVL.Drawables
             string fill = "fill=\"none\"";
 
             svgArc += $"<path d=\"{arcPath}\" {stroke} {strokeWidth} {fill} />{Environment.NewLine}";
+
+            if (isControllable)
+            {
+                Vector2D positionTic = positionArcSide;
+                Vector2D directionTicPerpendicular = directionPerpendicular;
+
+                Vector2D positionTicStart = positionTic - directionTicPerpendicular * drawingDir.ticLength / 2;
+                Vector2D positionTicEnd = positionTic + directionTicPerpendicular * drawingDir.ticLength / 2;
+                svgArc += $"<line x1=\"{positionTicStart.x}\" y1=\"{positionTicStart.y}\" x2=\"{positionTicEnd.x}\" y2=\"{positionTicEnd.y}\" stroke=\"{drawingDir.strokeColor}\" stroke-width=\"2\" />{Environment.NewLine}";
+            }
+
             svgArc += GenerateArrowheadPolygonSVG(positionArrowTip, positionArrowBase, drawingDir);
             svgArc += GenerateSvgTextElement(positionText, directionPerpendicular, canvas, name, drawingDir);
             
@@ -432,6 +544,17 @@ namespace AutoAVL.Drawables
             
             latexArc += @"\draw [black] (" + arcOrigin.x / 10 + "," + arcOrigin.y / 10 + ") arc (" + angleAutoLinkStart + ":" + angleAutoLinkEnd + ":" + arcRadius / 10 + ");" + Environment.NewLine;
 
+            if (isControllable)
+            {
+                Vector2D positionTic = positionSide;
+                Vector2D directionTicPerpendicular = perpendicularDirection;
+
+                Vector2D positionTicStart = positionTic - directionTicPerpendicular * drawingDir.ticLength / 2;
+                Vector2D positionTicEnd = positionTic + directionTicPerpendicular * drawingDir.ticLength / 2;
+
+                latexArc += @"\draw [black] (" + positionTicStart.x / 10 + "," + positionTicStart.y / 10 + ") -- (" + positionTicEnd.x / 10 + "," + positionTicEnd.y / 10 + ");" + Environment.NewLine; 
+            }
+
             latexArc += GenerateArrowheadPolygonLatex(arrowTip, arrowBase, drawingDir);
             latexArc += GenerateLatexTextElement(textPosition, perpendicularDirection, name, drawingDir);
             
@@ -441,25 +564,48 @@ namespace AutoAVL.Drawables
         
         string GenerateStraightTransitionSVG(SvgCanvas canvas, DrawingDir drawingDir)
         {
-            Vector2D positionStartNode = canvas.ToSvgCoordinates(start.position);
-            Vector2D positionEndNode = canvas.ToSvgCoordinates(end.position);
+            Vector2D lineOrigin = new Vector2D();
+            Vector2D lineDestination = new Vector2D();
 
-            Vector2D positionAuxiliary = canvas.ToSvgCoordinates(_directionAuxiliary);
+            Vector2D arrowTip = new Vector2D();
+            Vector2D arrowBase = new Vector2D();
 
-            Vector2D directionTransition = (positionEndNode - positionStartNode).Normalized();
-            Vector2D directionPerpendicular = directionTransition.PerpendicularSVG();
+            Vector2D textPosition = new Vector2D();
 
-            if (isInitialLink) directionTransition = (positionEndNode - positionAuxiliary).Normalized();
+            Vector2D directionPerpendicular = new Vector2D();
+
+            if (isInitialLink)
+            {
+                Vector2D positionNode = canvas.ToSvgCoordinates(start.position);
+
+                Vector2D directionTransition = -_directionAuxiliary.ToSvgDirection();
+                directionPerpendicular = directionTransition.PerpendicularSVG();
+
+                arrowTip = positionNode - directionTransition * drawingDir.TotalRadius();
+                arrowBase = positionNode - directionTransition * (drawingDir.TotalRadius() + drawingDir.arrowLength);
+
+                lineOrigin = arrowBase - directionTransition * radiusPercentage;
+                lineDestination = arrowBase;
+            }
+            else
+            {
+                Vector2D positionStartNode = canvas.ToSvgCoordinates(start.position);
+                Vector2D positionEndNode = canvas.ToSvgCoordinates(end.position);
+
+                Vector2D directionTransition = (positionEndNode - positionStartNode).Normalized();
+                directionPerpendicular = directionTransition.PerpendicularSVG();
+
+                Vector2D positionMiddle = positionStartNode.Middle(positionEndNode);
+
+                arrowTip = positionEndNode - directionTransition * drawingDir.nodeRadius;
+                arrowBase = positionEndNode - directionTransition * (drawingDir.nodeRadius + drawingDir.arrowLength);
+
+                lineOrigin = positionStartNode + directionTransition * drawingDir.nodeRadius;
+                lineDestination = arrowBase;
+
+                textPosition = positionMiddle + directionPerpendicular * drawingDir.textDistance;
+            }
             
-            Vector2D arrowTip = positionEndNode - directionTransition * drawingDir.nodeRadius;
-            Vector2D arrowBase = positionEndNode - directionTransition * (drawingDir.nodeRadius + drawingDir.arrowLength);
-
-            Vector2D lineOrigin = positionStartNode + directionTransition * drawingDir.nodeRadius;
-            if (isInitialLink) lineOrigin = positionAuxiliary;
-            
-            Vector2D lineDestination = arrowBase;
-
-            Vector2D textPosition = positionAuxiliary + directionPerpendicular * drawingDir.textDistance;
             
             // Convert the points to the SVG canva's coordinate system.
             /* arrowTip = canvas.ToSvgCoordinates(arrowTip);
@@ -468,6 +614,16 @@ namespace AutoAVL.Drawables
             lineDestination = canvas.ToSvgCoordinates(lineDestination); */
             
             string svgLine = $"<line x1=\"{lineOrigin.x}\" y1=\"{lineOrigin.y}\" x2=\"{lineDestination.x}\" y2=\"{lineDestination.y}\" stroke=\"{drawingDir.strokeColor}\" stroke-width=\"{drawingDir.linkStrokeWidth}\" />{Environment.NewLine}";
+
+            if (isControllable)
+            {
+                Vector2D positionTic = lineOrigin.Middle(arrowTip);
+                Vector2D directionTicPerpendicular = directionPerpendicular;
+
+                Vector2D positionTicStart = positionTic - directionTicPerpendicular * drawingDir.ticLength / 2;
+                Vector2D positionTicEnd = positionTic + directionTicPerpendicular * drawingDir.ticLength / 2;
+                svgLine += $"<line x1=\"{positionTicStart.x}\" y1=\"{positionTicStart.y}\" x2=\"{positionTicEnd.x}\" y2=\"{positionTicEnd.y}\" stroke=\"{drawingDir.strokeColor}\" stroke-width=\"2\" />{Environment.NewLine}";
+            }
             
             svgLine += GenerateArrowheadPolygonSVG(arrowTip, arrowBase, drawingDir);
             if (isInitialLink) return svgLine;
@@ -480,21 +636,33 @@ namespace AutoAVL.Drawables
         string GenerateStraightTransitionLatex(DrawingDir drawingDir)
         {
             Vector2D transitionDirection = (end.position - start.position).Normalized();
-            if (isInitialLink) transitionDirection = (end.position - _directionAuxiliary).Normalized();
+            if (isInitialLink) transitionDirection = -_directionAuxiliary;
             
             Vector2D perpendicularDirection = transitionDirection.Perpendicular();
             
-            Vector2D arrowTip = end.position - transitionDirection * drawingDir.nodeRadius;
-            Vector2D arrowBase = end.position - transitionDirection * (drawingDir.nodeRadius + drawingDir.arrowLength);
+            Vector2D arrowTip = end.position - transitionDirection * drawingDir.TotalRadius();
+            Vector2D arrowBase = end.position - transitionDirection * (drawingDir.TotalRadius() + drawingDir.arrowLength);
 
-            Vector2D lineOrigin = start.position + transitionDirection * drawingDir.nodeRadius;
-            if (isInitialLink) lineOrigin = _directionAuxiliary;
+            Vector2D lineOrigin = start.position + transitionDirection * drawingDir.TotalRadius();
+            if (isInitialLink) lineOrigin = arrowBase - transitionDirection * radiusPercentage;
             
             Vector2D lineDestination = arrowBase;
 
-            Vector2D textPosition = _directionAuxiliary + perpendicularDirection * drawingDir.textDistance;
+            Vector2D positionMiddle = lineOrigin.Middle(arrowTip);
+
+            Vector2D textPosition = positionMiddle + perpendicularDirection * drawingDir.textDistance;
 
             string latexLineElement = @"\draw [black] (" + lineOrigin.x / 10 + "," + lineOrigin.y / 10 + ") -- (" + lineDestination.x / 10 + "," + lineDestination.y / 10 + ");" + Environment.NewLine; 
+
+            if (isControllable)
+            {
+                Vector2D positionTic = lineOrigin.Middle(arrowTip);
+                Vector2D directionTicPerpendicular = perpendicularDirection;
+
+                Vector2D positionTicStart = positionTic - directionTicPerpendicular * drawingDir.ticLength / 2;
+                Vector2D positionTicEnd = positionTic + directionTicPerpendicular * drawingDir.ticLength / 2;
+                latexLineElement += @"\draw [black] (" + positionTicStart.x / 10 + "," + positionTicStart.y / 10 + ") -- (" + positionTicEnd.x / 10 + "," + positionTicEnd.y / 10 + ");" + Environment.NewLine; 
+            }
 
             latexLineElement += GenerateArrowheadPolygonLatex(arrowTip, arrowBase, drawingDir);
             
@@ -672,6 +840,16 @@ namespace AutoAVL.Drawables
             string fill = "fill=\"none\"";
 
             autoLinkSVG += $"<path d=\"{path}\" {stroke} {strokeWidth} {fill} />{Environment.NewLine}";
+
+            if (isControllable)
+            {
+                Vector2D positionTic = positionAutoLinkCenter + directionAutoLinkCenter * autoRadius;
+                Vector2D directionTicPerpendicular = directionAutoLinkCenter;
+
+                Vector2D positionTicStart = positionTic - directionTicPerpendicular * drawingDir.ticLength / 2;
+                Vector2D positionTicEnd = positionTic + directionTicPerpendicular * drawingDir.ticLength / 2;
+                autoLinkSVG += $"<line x1=\"{positionTicStart.x}\" y1=\"{positionTicStart.y}\" x2=\"{positionTicEnd.x}\" y2=\"{positionTicEnd.y}\" stroke=\"{drawingDir.strokeColor}\" stroke-width=\"2\" />{Environment.NewLine}";
+            }
             autoLinkSVG += GenerateArrowheadPolygonSVG(positionArrowTip, positionArrowBase, drawingDir);
             autoLinkSVG += GenerateSvgTextElement(textPosition, directionAutoLinkCenter, canvas, name, drawingDir);
             
@@ -697,7 +875,7 @@ namespace AutoAVL.Drawables
             Vector2D originPoint = positionAutoLinkCenter - transitionDirection.Rotated(nodeAngle) * drawingDir.autoLinkRadius; 
             Vector2D endPoint = arrowBase;
             
-            Vector2D textPosition = positionAutoLinkCenter;
+            Vector2D textPosition = positionAutoLinkCenter + transitionDirection * (drawingDir.AutoRadius() + 20);
 
             /* double angleAutoLinkStart = (originPoint - positionAutoLinkCenter).UnsignedAngle();
             double angleAutoLinkEnd = (endPoint - positionAutoLinkCenter).UnsignedAngle(); */
@@ -720,6 +898,15 @@ namespace AutoAVL.Drawables
             angleAutoLinkEnd = angleAutoLinkStart + includeOperation * angleToInclude;
             
             autoLinkSVG += @"\draw [black] (" + originPoint.x / 10 + "," + originPoint.y / 10 + ") arc (" + angleAutoLinkStart + ":" + angleAutoLinkEnd + ":" + autoRadius / 10 + ");" + Environment.NewLine;
+            if (isControllable)
+            {
+                Vector2D positionTic = positionAutoLinkCenter + transitionDirection * autoRadius;
+                Vector2D directionTicPerpendicular = transitionDirection;
+
+                Vector2D positionTicStart = positionTic - directionTicPerpendicular * drawingDir.ticLength / 2;
+                Vector2D positionTicEnd = positionTic + directionTicPerpendicular * drawingDir.ticLength / 2;
+                autoLinkSVG += @"\draw [black] (" + positionTicStart.x / 10 + "," + positionTicStart.y / 10 + ") -- (" + positionTicEnd.x / 10 + "," + positionTicEnd.y / 10 + ");" + Environment.NewLine; 
+            }
             autoLinkSVG += GenerateArrowheadPolygonLatex(arrowTip, arrowBase, drawingDir);
             autoLinkSVG += GenerateLatexTextElement(textPosition, transitionDirection, name, drawingDir);
             

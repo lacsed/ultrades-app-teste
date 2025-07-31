@@ -121,8 +121,10 @@ namespace UltraDESDraw.Services
 
                     if (InsideNode == null)
                     {
+                        Console.WriteLine("Agora é transição inicial");
                         _initialTransition = true;
                         TempLinkStart = _mousePosition;
+                        Console.WriteLine("Posição do mouse " + _mousePosition);
                     }
                     else
                         StartNode = InsideNode;
@@ -162,16 +164,28 @@ namespace UltraDESDraw.Services
                     {
                         if (_initialTransition)
                         {
-                            var newLink = new Link(EndNode, TempLinkStart.FromSvgCoordinates(this.Graph.svgCanvas.SVGOrigin()), false);
-                            newLink.radiusPercentage = 0;
+                            Console.WriteLine("Criando link inicial");
+                            Vector2D positionInitialLinkStart = TempLinkStart.FromSvgCoordinates(this.Graph.svgCanvas.SVGOrigin());
+                            Console.WriteLine("posição inicial = " + positionInitialLinkStart);
+                            Vector2D positionNode = EndNode.position;
+
+                            Vector2D directionAuxiliary = (positionInitialLinkStart - positionNode).Normalized();
+                            double size = (positionInitialLinkStart - positionNode).Length() - Graph.drawingDir.TotalRadius() - Graph.drawingDir.arrowLength;
+                            var newLink = new Link(EndNode, directionAuxiliary, false);
+                            newLink.radiusPercentage = size;
                             Graph.AddInitialLink(newLink);
-                            Console.WriteLine("Novo link inicial feito");
                         }
                         else
                         {
+                            Console.WriteLine("Antes dois");
                             var newLink = new Link(StartNode, EndNode, "");
+                            Console.WriteLine("Depois dois");
                             newLink.radiusPercentage = 0;
+                            Console.WriteLine(newLink == null);
+                            Console.WriteLine(newLink.start == null);
+                            Console.WriteLine(newLink.end == null);
                             Graph.AddLink(newLink);
+                            Console.WriteLine("Depois 3");
                         }
                     }
                     else if (InsideNode != null)
