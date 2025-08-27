@@ -6,13 +6,17 @@
             @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmousemove="HandleMouseMove" @onkeydown="HandleKeyDown" 
             @onkeyup="HandleKeyUp" @onwheel="HandleWheel" style="@SharedDataService.GetCursorType() width: 100%; height: 100%; outline: none;" class="canvas" tabindex="0"
             viewBox="@($"{-_offsetX} {-_offsetY} {_svgWidth / _zoomLevel} {_svgHeight / _zoomLevel}")">
+    
+    @{
+        
+    }
     @foreach (Node node in SharedDataService.Graph.graphNodes)
     {
-        <EditNode Node="node"/>
+        <EditNode @key="node.id" Node="node"/>
     }
     @foreach (Link link in SharedDataService.Graph.graphLinks)
     {
-        <EditLink Link="link"/>
+        <EditLink @key="link.guid" Link="link"/>
     }
     @if(SharedDataService.GetIsCreatingLink())
     {

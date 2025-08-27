@@ -169,7 +169,7 @@
 
         </ul>
         <p class="menu-label">Automaton (<a class="content-button" @onclick="() => ShowAutomata = !ShowAutomata">@((ShowAutomata) ? "- Hide": "+ Show")</a>)</p>
-        <ul class="menu-list" style="overflow: scroll;">
+        <ul class="menu-list" style="overflow-y: auto; overflow-x: hidden; height: 100%;">
             @if (ShowAutomata)
             {
                 @foreach (var G in automata)
@@ -437,6 +437,7 @@
 
     private void ShowAutomaton(DeterministicFiniteAutomaton G)
     {
+        page = Page.Empty;
         page = Page.EditCanvas;
 
         string nameAutomaton = G.Name;
@@ -455,6 +456,9 @@
             SharedDataService.automata.Add(nameAutomaton, graph);
             SharedDataService.Graph.AlignCanvas();
         }
+
+        SharedDataService.NotifyDataChanged();
+        StateHasChanged();
     }
 
     private void PrintAutomaton(DeterministicFiniteAutomaton G)
@@ -567,7 +571,6 @@
         automata.TryAdd("M1", new DeterministicFiniteAutomaton(new[] { (states["q0"], events["a1"], states["q1"]), (states["q1"], events["b1"], states["q0"]), }, states["q0"], "M1"));
         automata.TryAdd("M2", new DeterministicFiniteAutomaton(new[] { (states["q0"], events["a2"], states["q1"]), (states["q1"], events["b2"], states["q0"]), }, states["q0"], "M2"));
         automata.TryAdd("E", new DeterministicFiniteAutomaton(new[] { (states["q0"], events["b1"], states["q1"]), (states["q1"], events["a2"], states["q0"]), }, states["q0"], "E"));
-
     }
 
     private void LoadFlexibleManufacturingSystem()

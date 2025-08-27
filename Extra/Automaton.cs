@@ -74,7 +74,7 @@ namespace AutoAVL
                 }
                 else
                 {
-                    
+
                 }
             }
 
@@ -147,6 +147,11 @@ namespace AutoAVL
             List<Transition> transitions = dfa.Transitions.ToList();
             AbstractState initialState = dfa.InitialState;
             dfa = new DeterministicFiniteAutomaton(transitions, initialState, newName);
+        }
+
+        public string GetName()
+        {
+            return dfa == null ? ndfa.Name : dfa.Name;
         }
     }
 }

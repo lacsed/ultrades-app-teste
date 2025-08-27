@@ -24,7 +24,8 @@ namespace AutoAVL.Drawables
         public Automaton _automaton;
 
         public bool firstSimulation;
-        
+        public string graphName;
+
         public Graph()
         {
             _automaton = new Automaton();
@@ -35,8 +36,9 @@ namespace AutoAVL.Drawables
             drawingDir = new DrawingDir();
 
             svgCanvas = new SvgCanvas();
-            
+
             firstSimulation = false;
+            graphName = "";
         }
         
         public Graph(Automaton automaton)
@@ -51,6 +53,7 @@ namespace AutoAVL.Drawables
             svgCanvas = new SvgCanvas();
 
             firstSimulation = true;
+            graphName = automaton.GetName();
 
             foreach (AbstractState state in automaton.States())
             {
@@ -281,10 +284,6 @@ namespace AutoAVL.Drawables
             string svgImage = "";
 
             Box limitesCanvas = this.GetCanvasLimits();
-            Console.WriteLine("Ponto superior esquerdo = " + limitesCanvas.GetTopLeft());
-            Console.WriteLine("Ponto inferior direito = " + limitesCanvas.GetBottomRight());
-            Console.WriteLine("Largura da canvas = " + limitesCanvas.Width());
-            Console.WriteLine("Altura do canvas = " + limitesCanvas.Height());
             svgCanvas.SetUpCanvas(this.GetCanvasLimits());
 
             foreach (Drawable drawable in graphNodes.Concat<Drawable>(graphLinks).ToList())
@@ -334,13 +333,11 @@ namespace AutoAVL.Drawables
 
             // Inicialize canvasBox com a caixa do PRIMEIRO objeto
             Box canvasBox = allDrawables.First().GetBox(drawingDir);
-            Console.WriteLine("Ponto superior esquerdo inicial do canvasBox = " + canvasBox.GetTopLeft());
 
             // Itere sobre os objetos restantes (a partir do segundo)
             foreach (Drawable drawable in allDrawables.Skip(1)) // Pula o primeiro elemento que já foi usado
             {
                 canvasBox = Box.EncompassingBox(canvasBox, drawable.GetBox(drawingDir));
-                Console.WriteLine("Ponto superior esquerdo do canvasBox = " + canvasBox.GetTopLeft());
             }
 
             return canvasBox;
